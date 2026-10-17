@@ -1,0 +1,35 @@
+Prajwal Ganiga
+Email: prajwal.eng@example.com
+Phone: +91 9876543210
+GitHub: https://github.com/prajwalganiga
+LinkedIn: https://linkedin.com/in/prajwalganiga
+
+EDUCATION
+National Institute of Technology Karnataka (NITK)
+Bachelor of Technology in Computer Science and Engineering
+CGPA: 8.8 / 10.0 | Expected Graduation: 2026
+
+TECHNICAL SKILLS
+Languages: Python, C++, TypeScript, SQL, Bash
+Frameworks & Libraries: FastAPI, PyTorch, React, Next.js, Scikit-Learn
+Cloud & DevOps: Docker, MongoDB Atlas, Cloudinary, AWS, Git, CI/CD
+
+PROJECTS
+MirrorMind AI Career Predictor
+- Engineered PyTorch deep neural network and SentenceTransformer embedding pipeline to predict career trajectories with 99.6% accuracy.
+- Built asynchronous FastAPI microservice backed by MongoDB Atlas and Next.js frontend.
+- Tech Stack: Python, PyTorch, FastAPI, Next.js, Docker, MongoDB
+
+Real-Time Distributed Chat Service
+- Developed WebSocket-driven scalable messaging server supporting 10,000 concurrent connections.
+- Implemented Redis pub/sub and PostgreSQL message persistence.
+- Tech Stack: TypeScript, Node.js, Redis, PostgreSQL
+
+EXPERIENCE
+ZenLog Technologies - AI Engineering Intern (Jan 2026 - Jun 2026)
+- Designed and deployed end-to-end resume extraction pipelines using Google Gemini LLM and PyPDF.
+- Reduced manual candidate onboarding data entry by 85%.
+
+CERTIFICATIONS
+- DeepLearning.AI Machine Learning Specialization
+- AWS Certified Cloud Practitioner
