@@ -111,6 +111,30 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>Voice AI</span>
         </Link>
 
+        {/* Grounded Knowledge Vault Link */}
+        <Link
+          href="/knowledge-vault"
+          className="secondary-button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            textDecoration: "none",
+            padding: "6px 14px",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(6, 182, 212, 0.25))",
+            borderColor: "rgba(168, 85, 247, 0.4)",
+            color: "#c084fc",
+            borderRadius: "20px",
+          }}
+          title="Open Grounded Knowledge Vault & Vector Intelligence"
+        >
+          <span>📚</span>
+          <span>Knowledge Vault</span>
+        </Link>
+
+
 
         {/* User Pill & Navigation */}
         {authUser && (

@@ -88,6 +88,36 @@ def delete_document(doc_id: str, user_id: str = Query(...)):
         "message": f"Document '{doc_id}' and all associated vector chunks purged."
     }
 
+@router.get("/documents/{doc_id}/chunks")
+def get_document_chunks(doc_id: str, user_id: str = Query(...)):
+    """
+    Fetch all vector chunks for a specific document with embedding preview for visual inspection.
+    """
+    clean_user = user_id.strip()
+    chunk_col = get_document_chunks_collection()
+    chunks = list(chunk_col.find({"document_id": doc_id, "user_id": clean_user}).sort("chunk_index", 1))
+
+    result = []
+    for c in chunks:
+        emb = c.get("embedding", [])
+        result.append({
+            "chunk_id": str(c.get("_id", "")),
+            "chunk_index": c.get("chunk_index", 0),
+            "page_start": c.get("page_start", 1),
+            "page_end": c.get("page_end", 1),
+            "text": c.get("text", ""),
+            "char_count": len(c.get("text", "")),
+            "embedding_dim": len(emb),
+            "embedding_preview": [round(float(v), 4) for v in emb[:16]] if emb else []
+        })
+
+    return {
+        "document_id": doc_id,
+        "count": len(result),
+        "chunks": result
+    }
+
+
 @router.post("/query", response_model=RAGQueryResponse)
 def query_grounded_rag(request: RAGQueryRequest):
     """
