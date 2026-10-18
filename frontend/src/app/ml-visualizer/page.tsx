@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 import { MLPipelineVisualizer } from "@/components/MLPipelineVisualizer";
@@ -179,7 +180,30 @@ export default function MLVisualizerPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <Link
+              href="/ml-visualizer/developer"
+              className="editorial-action-btn"
+              style={{
+                padding: "10px 20px",
+                borderRadius: "999px",
+                background: "linear-gradient(135deg, #292A29 0%, #171817 100%)",
+                color: "#F7D45B",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                border: "1.5px solid rgba(247, 212, 91, 0.5)",
+                textDecoration: "none",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.15)",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span>🔬</span>
+              <span>Developer Mode: Live Pipeline Lab</span>
+            </Link>
+
             <button
               onClick={() => student && runRecalculation(student)}
               disabled={calculating || loading}

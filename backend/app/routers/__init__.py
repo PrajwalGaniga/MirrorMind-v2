@@ -5,6 +5,7 @@ from .auth import router as auth_router
 from .health import router as health_router
 from .voice_chat import router as voice_chat_router
 from .rag import router as rag_router
+from .ml_trace import router as ml_trace_router
 
 __all__ = [
     "resume_router",
@@ -14,6 +15,7 @@ __all__ = [
     "health_router",
     "voice_chat_router",
     "rag_router",
+    "ml_trace_router",
 ]
 
 

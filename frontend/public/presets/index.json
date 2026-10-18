@@ -1,0 +1,108 @@
+[
+  {
+    "id": "fullstack_ui_polyglot",
+    "name": "Fullstack & UI Polyglot",
+    "category": "Web & Client Platforms",
+    "tagline": "Modern responsive interfaces, mobile cross-platform apps, and high-velocity full-stack delivery.",
+    "skills": [
+      "React",
+      "Next.js",
+      "Flutter",
+      "TailwindCSS",
+      "TypeScript",
+      "GraphQL",
+      "Mobile UI/UX",
+      "CSS"
+    ],
+    "cgpa": 8.5,
+    "top_role": "Fullstack Developer",
+    "top_confidence": 67.2,
+    "secondary_role": "Frontend Developer",
+    "secondary_confidence": 32.7,
+    "json_path": "/presets/fullstack_ui_polyglot.json"
+  },
+  {
+    "id": "applied_ai_data_scientist",
+    "name": "Applied AI & Data Scientist",
+    "category": "Machine Learning & Analytics",
+    "tagline": "Predictive modeling, deep learning architectures, statistical hypothesis testing, and FastAPI inference.",
+    "skills": [
+      "Python",
+      "Data Science",
+      "Machine Learning",
+      "FastAPI",
+      "SQL",
+      "Pandas"
+    ],
+    "cgpa": 8.6,
+    "top_role": "AI / ML Engineer",
+    "top_confidence": 71.3,
+    "secondary_role": "Backend Developer",
+    "secondary_confidence": 11.5,
+    "json_path": "/presets/applied_ai_data_scientist.json"
+  },
+  {
+    "id": "backend_cloud_architect",
+    "name": "Backend & Cloud API Architect",
+    "category": "Distributed Systems & APIs",
+    "tagline": "Robust microservice APIs, relational schemas, caching tiers, and containerized deployment pipelines.",
+    "skills": [
+      "Python",
+      "SQL",
+      "FastAPI",
+      "React",
+      "PostgreSQL",
+      "Docker",
+      "Git"
+    ],
+    "cgpa": 8.6,
+    "top_role": "Backend Developer",
+    "top_confidence": 73.6,
+    "secondary_role": "Fullstack Developer",
+    "secondary_confidence": 21.7,
+    "json_path": "/presets/backend_cloud_architect.json"
+  },
+  {
+    "id": "devops_cloud_sre",
+    "name": "DevOps & Cloud SRE",
+    "category": "Cloud Infrastructure & SRE",
+    "tagline": "Automated CI/CD build matrixes, infrastructure as code, container orchestration, and reliability monitoring.",
+    "skills": [
+      "Docker",
+      "Kubernetes",
+      "Jenkins",
+      "Ansible",
+      "AWS",
+      "Python",
+      "Git"
+    ],
+    "cgpa": 8.5,
+    "top_role": "DevOps & Cloud Engineer",
+    "top_confidence": 73.4,
+    "secondary_role": "Data Engineer",
+    "secondary_confidence": 13.2,
+    "json_path": "/presets/devops_cloud_sre.json"
+  },
+  {
+    "id": "data_platform_systems",
+    "name": "Data Platform & Systems Specialist",
+    "category": "Data Systems & AI Integration",
+    "tagline": "Distributed data pipelines, Transformer model integration, document ingestion, and scalable databases.",
+    "skills": [
+      "Python",
+      "FastAPI",
+      "PyTorch",
+      "Docker",
+      "Deep Learning",
+      "React",
+      "MongoDB",
+      "Transformers"
+    ],
+    "cgpa": 9.2,
+    "top_role": "Data Engineer",
+    "top_confidence": 51.3,
+    "secondary_role": "Fullstack Developer",
+    "secondary_confidence": 40.3,
+    "json_path": "/presets/data_platform_systems.json"
+  }
+]

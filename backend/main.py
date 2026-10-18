@@ -17,6 +17,7 @@ from app.routers import (
     health_router,
     voice_chat_router,
     rag_router,
+    ml_trace_router,
 )
 
 # Configure logging
@@ -86,6 +87,7 @@ app.include_router(ml_router, prefix=settings.API_PREFIX)
 app.include_router(voice_chat_router, prefix=settings.API_PREFIX)
 app.include_router(voice_chat_router)  # also mount at root /ws/voice-chat
 app.include_router(rag_router, prefix=settings.API_PREFIX)
+app.include_router(ml_trace_router, prefix=settings.API_PREFIX)
 
 
 
