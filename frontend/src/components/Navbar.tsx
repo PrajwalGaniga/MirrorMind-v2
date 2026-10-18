@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +37,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   mlLoaded = true,
 }) => {
   const pathname = usePathname();
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Determine avatar to show: studentProfile avatar, authUser photo, or fallback
   const avatarUrl =
@@ -49,142 +52,243 @@ export const Navbar: React.FC<NavbarProps> = ({
     studentProfile?.name ||
     authUser?.displayName ||
     mongoUser?.name ||
-    "Student";
+    "Prajwal";
+
+  const displayEmail =
+    studentEmail ||
+    studentProfile?.email ||
+    authUser?.email ||
+    "prajwal.seed@mirrormind.ai";
 
   const navItems = [
-    { label: "Dashboard", href: "/", icon: "📊" },
-    { label: "Career Dossier", href: "/profile", icon: "📋" },
-    { label: "Knowledge Vault", href: "/knowledge-vault", icon: "📚" },
-    { label: "ML Visualizer", href: "/ml-visualizer", icon: "🧠" },
-    { label: "Public Portfolio", href: "/portfolio", icon: "✨" },
+    { label: "Home", href: "/", icon: "🏠" },
+    { label: "Profile", href: "/profile", icon: "👤" },
+    { label: "Projects & Internships", href: "/profile#projects", icon: "📁" },
+    { label: "ML / DL", href: "/ml-visualizer", icon: "🧠" },
+    { label: "Portfolio", href: "/portfolio", icon: "✨" },
     { label: "Voice Studio", href: "/voice-chat", icon: "🎙️" },
   ];
 
   return (
-    <header className="navbar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "20px", borderBottom: "1px solid var(--border-subtle)", gap: "16px", flexWrap: "wrap" }}>
-      {/* Brand Identity */}
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-        <div className="brand-icon" style={{ width: "38px", height: "38px", borderRadius: "10px", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontWeight: 800, fontSize: "1.1rem", border: "1px solid rgba(0,0,0,0.1)" }}>
-          M
-        </div>
-        <div className="brand-text">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <h1 style={{ fontSize: "1.15rem", margin: 0, fontWeight: 700, color: "var(--text-primary)" }}>MirrorMind v2</h1>
-            <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "12px", background: "var(--accent)", color: "var(--charcoal)" }}>
-              AI 2.0
-            </span>
+    <header style={{ width: "100%", marginBottom: "20px" }}>
+      {/* Floating Dark Charcoal Navbar Banner */}
+      <div className="navbar-banner-dark">
+        {/* Left: Brand Identity / Student Persona */}
+        <Link href="/" className="nav-brand-container">
+          <div className="nav-brand-avatar">
+            {displayName.charAt(0).toUpperCase()}
           </div>
-          <p style={{ fontSize: "0.76rem", margin: 0, color: "var(--text-secondary)" }}>
-            Autonomous Career Intelligence &amp; Neural Radar
-          </p>
-        </div>
-      </Link>
+          <div className="nav-brand-info">
+            <h2>{displayName}</h2>
+            <p>Student Digital Twin &amp; AI Voice Co-Pilot</p>
+          </div>
+        </Link>
 
-      {/* Editorial Pill Navigation */}
-      <nav className="editorial-nav-pills" style={{ display: "inline-flex", background: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-pill)", padding: "4px", gap: "2px", boxShadow: "0 2px 6px rgba(0,0,0,0.02)" }}>
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
+        {/* Center: Desktop Pill Navigation */}
+        <nav className="nav-pills-row" aria-label="Main Navigation">
+          {navItems.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : item.href.startsWith("/profile#")
+                ? pathname === "/profile"
+                : pathname === item.href;
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`nav-pill-item ${isActive ? "active" : "inactive"}`}
+              >
+                <span style={{ fontSize: "0.85rem" }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right: Controls & User Actions */}
+        <div className="nav-controls-right">
+          {/* Theme Toggle (Sun/Moon) */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="nav-icon-btn"
+            title="Toggle theme appearance"
+            aria-label="Toggle theme appearance"
+          >
+            <span>{isDarkMode ? "🌙" : "☀️"}</span>
+          </button>
+
+          {/* Notifications Bell */}
+          <button
+            className="nav-icon-btn"
+            title="System notifications"
+            aria-label="System notifications"
+          >
+            <span>🔔</span>
+            <span className="nav-notification-dot" />
+          </button>
+
+          {/* User Profile Pill & Dropdown */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="nav-user-pill"
+              aria-expanded={userDropdownOpen}
+              aria-label="User account menu"
+            >
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt={displayName}
+                  width={26}
+                  height={26}
+                  className="nav-user-avatar"
+                  unoptimized={avatarUrl.startsWith("http")}
+                />
+              ) : (
+                <div className="nav-user-avatar">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span>{displayName.split(" ")[0]}</span>
+              <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>▼</span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {userDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "calc(100% + 8px)",
+                  background: "#202120",
+                  border: "1px solid rgba(255, 255, 255, 0.14)",
+                  borderRadius: "16px",
+                  padding: "12px 14px",
+                  minWidth: "220px",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+                  zIndex: 100,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                <div style={{ paddingBottom: "8px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#FFFFFF" }}>{displayName}</div>
+                  <div style={{ fontSize: "0.74rem", color: "#9CA3AF" }}>{displayEmail}</div>
+                </div>
+
+                {/* Status Badges */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#D1D5DB" }}>
+                    <span>MongoDB Atlas:</span>
+                    <span style={{ color: dbConnected ? "#10B981" : "#F59E0B", fontWeight: 600 }}>
+                      {dbConnected ? "Connected" : "Syncing"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#D1D5DB" }}>
+                    <span>PyTorch Neural Net:</span>
+                    <span style={{ color: mlLoaded ? "#60A5FA" : "#F59E0B", fontWeight: 600 }}>
+                      {mlLoaded ? "Active (384-D)" : "Loading"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Profile Link */}
+                <Link
+                  href="/profile"
+                  onClick={() => setUserDropdownOpen(false)}
+                  style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    color: "var(--accent)",
+                    textDecoration: "none",
+                    padding: "6px 0",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                  }}
+                >
+                  📋 Career Dossier Studio
+                </Link>
+
+                {/* Logout Button */}
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      onLogout();
+                    }}
+                    style={{
+                      background: "rgba(239, 68, 68, 0.15)",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      borderRadius: "8px",
+                      color: "#FCA5A5",
+                      padding: "6px 12px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textAlign: "center",
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Toggle (< 768px) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="nav-icon-btn"
+            style={{ display: "none" }}
+            id="mobile-menu-toggle"
+            title="Open navigation menu"
+            aria-label="Open navigation menu"
+          >
+            <span>{mobileMenuOpen ? "✕" : "☰"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Drawer */}
+      {mobileMenuOpen && (
+        <div
+          style={{
+            marginTop: "10px",
+            background: "var(--charcoal)",
+            borderRadius: "16px",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          {navItems.map((item) => (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "6px 14px",
-                borderRadius: "var(--radius-pill)",
-                fontSize: "0.82rem",
-                fontWeight: isActive ? 600 : 500,
+                gap: "10px",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                color: pathname === item.href ? "var(--charcoal)" : "#FFFFFF",
+                background: pathname === item.href ? "var(--accent)" : "transparent",
+                fontWeight: pathname === item.href ? 700 : 500,
                 textDecoration: "none",
-                color: isActive ? "#FFFFFF" : "var(--text-secondary)",
-                background: isActive ? "var(--charcoal)" : "transparent",
-                transition: "all 0.18s ease",
-                boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.18)" : "none",
+                fontSize: "0.85rem",
               }}
             >
               <span>{item.icon}</span>
               <span>{item.label}</span>
             </Link>
-          );
-        })}
-      </nav>
-
-      {/* System Status Badges & User Area */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-        {/* MongoDB Status */}
-        <div
-          className={`status-badge ${dbConnected ? "connected" : "connecting"}`}
-          title="MongoDB Atlas Connection Status"
-          style={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem" }}
-        >
-          <span className="pulse-dot" style={{ background: dbConnected ? "#10b981" : "#f59e0b", width: "6px", height: "6px" }}></span>
-          <span>{dbConnected ? "Atlas" : "Syncing"}</span>
+          ))}
         </div>
-
-        {/* PyTorch ML Status */}
-        <div
-          className={`status-badge ${mlLoaded ? "connected" : "connecting"}`}
-          title="PyTorch CareerMLP Status"
-          style={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem" }}
-        >
-          <span className="pulse-dot" style={{ background: mlLoaded ? "#6366f1" : "#f59e0b", width: "6px", height: "6px" }}></span>
-          <span>{mlLoaded ? "PyTorch" : "ML"}</span>
-        </div>
-
-
-
-        {/* User Pill & Navigation */}
-        {authUser && (
-          <div className="user-profile-bar">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={displayName}
-                width={32}
-                height={32}
-                className="user-avatar"
-                unoptimized={avatarUrl.startsWith("http")}
-              />
-            ) : (
-              <div className="user-avatar-fallback">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-
-            <div className="user-info">
-              <span className="user-name">{displayName}</span>
-              <span className="user-email">{authUser.email}</span>
-            </div>
-
-            {/* Profile Link */}
-            {studentProfile && (
-              <Link
-                href="/profile"
-                className="secondary-button"
-                style={{
-                  padding: "5px 12px",
-                  fontSize: "0.78rem",
-                  marginLeft: "4px",
-                  textDecoration: "none",
-                  borderRadius: "var(--radius-pill)",
-                }}
-              >
-                ✏️ Profile Dossier
-              </Link>
-            )}
-
-            {/* Logout Button */}
-            <button
-              onClick={onLogout}
-              className="logout-btn"
-              title="Sign out of MirrorMind"
-            >
-              Sign out
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </header>
   );
 };
