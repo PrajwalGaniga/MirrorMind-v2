@@ -120,3 +120,37 @@ export interface ResumeParseResponse {
   };
   raw_text_length: number;
 }
+
+export interface UserDocumentItem {
+  id?: string;
+  _id?: string;
+  user_id: string;
+  filename: string;
+  category: string;
+  file_type: string;
+  file_size: number;
+  processing_status: string;
+  embedding_status: string;
+  page_count: number;
+  chunk_count: number;
+  uploaded_at: string;
+}
+
+export interface CitationSourceItem {
+  document_id: string;
+  filename: string;
+  category: string;
+  page_start: number;
+  page_end: number;
+  score: number;
+  text: string;
+}
+
+export interface RAGQueryResponseData {
+  question: string;
+  answer: string;
+  citations: CitationSourceItem[];
+  structured_profile_used: boolean;
+  retrieved_chunks_count: number;
+}
+

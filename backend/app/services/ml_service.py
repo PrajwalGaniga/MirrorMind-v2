@@ -129,9 +129,17 @@ class MLService:
         # 4. Load Sentence Transformer
         logger.info("Initializing SentenceTransformer('all-MiniLM-L6-v2')...")
         self.embedder = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
-
         self.is_loaded = True
         logger.info("ML Service models loaded successfully.")
+
+
+    @property
+    def embedding_model(self) -> SentenceTransformer:
+        """Convenience property returning loaded SentenceTransformer embedder."""
+        if not self.is_loaded or self.embedder is None:
+            self.load_models()
+        return self.embedder
+
 
     def predict(
         self,

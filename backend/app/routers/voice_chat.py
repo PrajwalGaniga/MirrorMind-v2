@@ -90,10 +90,25 @@ async def voice_chat_websocket(websocket: WebSocket):
                 continue
 
             user_text = data.get("text", "").strip()
+            user_id = data.get("user_id", "").strip() or "prajwal.seed@mirrormind.ai"
             if not user_text:
                 continue
 
-            logger.info(f"Voice Chat User Input: '{user_text}'")
+            logger.info(f"Voice Chat User Input: '{user_text}' (user: {user_id})")
+
+            # Check for Grounded RAG document context
+            rag_context = ""
+            try:
+                from app.services.rag_service import rag_service
+                chunks = rag_service.search_vector_chunks(user_id=user_id, query_text=user_text, top_k=2)
+                if chunks and chunks[0].get("score", 0) > 0.45:
+                    rag_context = "\n[VERIFIED DOCUMENT EVIDENCE FOUND IN STUDENT'S VAULT:\n" + "\n".join(
+                        [f"- From {c['filename']} (Page {c['page_start']}): {c['text'][:250]}..." for c in chunks]
+                    ) + "\nCite this naturally if relevant to the question!]\n"
+            except Exception as rag_err:
+                logger.debug(f"Voice RAG retrieval note: {rag_err}")
+
+            prompt_to_send = f"{rag_context}User says: {user_text}" if rag_context else user_text
 
             # Notify client that AI response stream has started
             await websocket.send_json({"type": "stream_start"})
@@ -101,7 +116,7 @@ async def voice_chat_websocket(websocket: WebSocket):
             full_chunks = []
             try:
                 # Streaming response from Gemini
-                response_stream = chat.send_message(user_text, stream=True)
+                response_stream = chat.send_message(prompt_to_send, stream=True)
                 for chunk in response_stream:
                     if chunk.text:
                         full_chunks.append(chunk.text)
@@ -109,6 +124,7 @@ async def voice_chat_websocket(websocket: WebSocket):
                             "type": "stream_chunk",
                             "chunk": chunk.text
                         })
+
 
                 full_response = "".join(full_chunks).strip()
                 await websocket.send_json({

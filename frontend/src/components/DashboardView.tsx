@@ -5,6 +5,7 @@ import Image from "next/image";
 import { StudentProfile, PredictResponse } from "@/types/student";
 import { MLPipelineVisualizer } from "./MLPipelineVisualizer";
 import { StudentDossier } from "./StudentDossier";
+import { KnowledgeVault } from "./KnowledgeVault";
 
 interface DashboardViewProps {
   student: StudentProfile;
@@ -19,8 +20,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   prediction,
   onEditProfile,
   onRefreshPrediction,
+  apiUrl,
 }) => {
-  const [activeTab, setActiveTab] = useState<"visualizer" | "dossier" | "verification">(
+  const [activeTab, setActiveTab] = useState<"visualizer" | "dossier" | "knowledge" | "verification">(
     "visualizer"
   );
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -90,20 +92,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
+      <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px", flexWrap: "wrap" }}>
         <button
           onClick={() => setActiveTab("visualizer")}
           className={`pipeline-step-btn ${activeTab === "visualizer" ? "active" : ""}`}
-          style={{ minWidth: "180px" }}
+          style={{ minWidth: "170px" }}
         >
           <span className="step-tag-pill">AI PIPELINE</span>
           <span className="step-btn-title">🧠 Career ML Visualizer</span>
         </button>
 
         <button
+          onClick={() => setActiveTab("knowledge")}
+          className={`pipeline-step-btn ${activeTab === "knowledge" ? "active" : ""}`}
+          style={{ minWidth: "170px" }}
+        >
+          <span className="step-tag-pill" style={{ background: "rgba(6, 182, 212, 0.2)", color: "#06b6d4" }}>
+            RAG &amp; VECTOR
+          </span>
+          <span className="step-btn-title">📚 Knowledge Vault</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("dossier")}
           className={`pipeline-step-btn ${activeTab === "dossier" ? "active" : ""}`}
-          style={{ minWidth: "180px" }}
+          style={{ minWidth: "170px" }}
         >
           <span className="step-tag-pill">PROFILE DOSSIER</span>
           <span className="step-btn-title">📋 Academic &amp; Projects</span>
@@ -112,7 +125,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <button
           onClick={() => setActiveTab("verification")}
           className={`pipeline-step-btn ${activeTab === "verification" ? "active" : ""}`}
-          style={{ minWidth: "180px" }}
+          style={{ minWidth: "170px" }}
         >
           <span className="step-tag-pill">RAW DATA</span>
           <span className="step-btn-title">🔗 Database Verification</span>
@@ -123,6 +136,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {activeTab === "visualizer" && (
         <MLPipelineVisualizer prediction={prediction} student={student} />
       )}
+
+      {activeTab === "knowledge" && (
+        <KnowledgeVault student={student} apiUrl={apiUrl} />
+      )}
+
 
       {activeTab === "dossier" && (
         <StudentDossier student={student} onEditProfile={onEditProfile} />

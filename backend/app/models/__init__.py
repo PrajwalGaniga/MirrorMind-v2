@@ -8,6 +8,14 @@ from .student import (
 )
 from .resume import ResumeExtractedData, ResumeParseResponse
 from .ml import PredictRequest, PredictResponse
+from .rag import (
+    DocumentCategory,
+    UserDocument,
+    DocumentChunk,
+    RAGQueryRequest,
+    CitationSource,
+    RAGQueryResponse,
+)
 
 __all__ = [
     "ProjectItem",
@@ -20,4 +28,11 @@ __all__ = [
     "ResumeParseResponse",
     "PredictRequest",
     "PredictResponse",
+    "DocumentCategory",
+    "UserDocument",
+    "DocumentChunk",
+    "RAGQueryRequest",
+    "CitationSource",
+    "RAGQueryResponse",
 ]
+

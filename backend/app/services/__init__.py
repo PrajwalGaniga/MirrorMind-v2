@@ -2,6 +2,8 @@ from .cloudinary_service import upload_resume_file, upload_avatar_image
 from .gemini_service import extract_resume_details, generate_career_insights
 from .resume_service import parse_and_upload_resume, extract_text_from_pdf
 from .ml_service import ml_service, CareerMLP, build_profile_text
+from .document_processor import document_processor
+from .rag_service import rag_service
 
 __all__ = [
     "upload_resume_file",
@@ -13,4 +15,7 @@ __all__ = [
     "ml_service",
     "CareerMLP",
     "build_profile_text",
+    "document_processor",
+    "rag_service",
 ]
+

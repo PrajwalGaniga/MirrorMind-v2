@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     MONGO_COLLECTION_STUDENTS: str = "students"
     MONGO_COLLECTION_RESUMES: str = "resumes"
     MONGO_COLLECTION_USERS: str = "mirrormind"
+    MONGO_COLLECTION_DOCUMENTS: str = "user_documents"
+    MONGO_COLLECTION_CHUNKS: str = "document_chunks"
+    MONGO_VECTOR_INDEX_NAME: str = "vector_rag_index"
+
+    # RAG Settings
+    RAG_CHUNK_SIZE: int = 1000
+    RAG_CHUNK_OVERLAP: int = 200
+    RAG_MAX_CONTEXT_CHARS: int = 20000
+    RAG_TOP_K: int = 5
+
 
     # Google Gemini
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.core.config import settings
-from app.core.database import get_mongo_client
+from app.core.database import get_mongo_client, ensure_vector_search_index
 from app.services.ml_service import ml_service
 from app.routers import (
     resume_router,
@@ -16,6 +16,7 @@ from app.routers import (
     auth_router,
     health_router,
     voice_chat_router,
+    rag_router,
 )
 
 # Configure logging
@@ -29,7 +30,8 @@ logger = logging.getLogger("mirrormind")
 async def lifespan(app: FastAPI):
     """
     FastAPI lifespan manager:
-    Pre-loads heavy models (PyTorch + SentenceTransformers) on startup for fast inference.
+    Pre-loads heavy models (PyTorch + SentenceTransformers) on startup for fast inference,
+    and verifies MongoDB Atlas Vector Search index.
     """
     logger.info("Initializing MirrorMind v2 backend services...")
 
@@ -41,7 +43,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"MongoDB Atlas connection warning: {e}")
 
-    # 2. Pre-load PyTorch & SentenceTransformer models
+    # 2. Verify / ensure Atlas Vector Search Index
+    try:
+        index_res = ensure_vector_search_index()
+        logger.info(f"MongoDB Atlas Vector Search status: {index_res}")
+    except Exception as e:
+        logger.warning(f"Atlas Vector Search initialization note: {e}")
+
+    # 3. Pre-load PyTorch & SentenceTransformer models
     try:
         ml_service.load_models()
         logger.info("PyTorch CareerMLP & SentenceTransformers loaded into memory.")
@@ -76,6 +85,8 @@ app.include_router(student_router, prefix=settings.API_PREFIX)
 app.include_router(ml_router, prefix=settings.API_PREFIX)
 app.include_router(voice_chat_router, prefix=settings.API_PREFIX)
 app.include_router(voice_chat_router)  # also mount at root /ws/voice-chat
+app.include_router(rag_router, prefix=settings.API_PREFIX)
+
 
 
 # Backward-compatibility route for initial starter page
