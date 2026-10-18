@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
-from app.core.database import get_students_collection, serialize_doc
+from app.core.database import get_students_collection, get_user_documents_collection, serialize_doc
 from app.services.ml_service import ml_service, ROLE_LABELS
 
 logger = logging.getLogger(__name__)
@@ -477,3 +477,175 @@ class StudentAgentTools:
             f"You have {len(skills)} verified skills, {proj_count} portfolio projects, and {intern_count} internships. "
             f"Your highest career alignment is {top_label}. Skill Radar proficiencies: {radar_summary}."
         )
+
+    def get_academic_info(self) -> str:
+        """Retrieves the student's complete academic standing from MongoDB:
+        current CGPA, university or college name, engineering branch, semester, and backlog status.
+        Call whenever the student asks about their CGPA, grades, marks, university, college, or current semester.
+        """
+        try:
+            col = get_students_collection()
+            query = {"email": self.user_id} if "@" in self.user_id else {"user_id": self.user_id}
+            doc = col.find_one(query)
+            if not doc:
+                return "Your academic profile is being initialized in the database."
+
+            cgpa = doc.get("cgpa", 0.0)
+            college = doc.get("college_name") or "Visvesvaraya Technological University"
+            branch = doc.get("branch") or "Bachelor of Computer Science and Design Engineering"
+            sem = doc.get("semester", 7)
+            tier = doc.get("college_tier", "Tier-1")
+
+            self.action_history.append({
+                "action": "get_academic_info",
+                "cgpa": cgpa,
+                "college": college,
+                "branch": branch,
+                "semester": sem,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            return (
+                f"Your verified academic record in MongoDB shows: CGPA of {cgpa:.2f}, studying {branch} "
+                f"at {college} in Semester {sem} ({tier})."
+            )
+        except Exception as e:
+            logger.error(f"Error fetching academic info for {self.user_id}: {e}")
+            return "Unable to access academic records at this moment."
+
+    def update_academics(
+        self,
+        cgpa: Optional[float] = None,
+        college_name: Optional[str] = None,
+        branch: Optional[str] = None,
+        semester: Optional[int] = None
+    ) -> str:
+        """Updates the student's academic credentials (CGPA, college/university name, branch, semester)
+        in MongoDB Atlas and triggers career radar re-evaluation.
+        Call whenever the student says 'my CGPA is X', 'update my CGPA to X', or 'my university is Y, add it to the database'.
+
+        Args:
+            cgpa: Updated cumulative GPA, e.g. 9.25, 8.8.
+            college_name: Full institution or university name (e.g. 'Visvesvaraya Technological University').
+            branch: Engineering branch or major (e.g. 'Computer Science & Engineering').
+            semester: Current semester integer (e.g. 6, 7, 8).
+        """
+        updates = {}
+        msg_parts = []
+
+        if cgpa is not None:
+            updates["cgpa"] = float(cgpa)
+            msg_parts.append(f"CGPA to {cgpa}")
+        if college_name:
+            updates["college_name"] = college_name.strip()
+            msg_parts.append(f"University to '{college_name.strip()}'")
+        if branch:
+            updates["branch"] = branch.strip()
+            msg_parts.append(f"Branch to '{branch.strip()}'")
+        if semester is not None:
+            updates["semester"] = int(semester)
+            msg_parts.append(f"Semester to {semester}")
+
+        if not updates:
+            return "Please provide specific academic details to update (such as CGPA, college name, or semester)."
+
+        updates["updated_at"] = datetime.now(timezone.utc)
+
+        try:
+            col = get_students_collection()
+            query = {"email": self.user_id} if "@" in self.user_id else {"user_id": self.user_id}
+            col.update_one(query, {"$set": updates}, upsert=True)
+
+            # Invalidate/refresh local cache
+            if self.user_id in _ML_CACHE:
+                for k, v in updates.items():
+                    if k != "updated_at":
+                        _ML_CACHE[self.user_id][k] = v
+
+            action_desc = f"Updated academic record: {', '.join(msg_parts)}"
+            self.action_history.append({
+                "action": "update_academics",
+                "message": action_desc,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            # Queue background recalculation if CGPA changed
+            if "cgpa" in updates:
+                schedule_idle_recalculation(self.user_id, idle_seconds=8.0)
+
+            return f"Successfully updated your {', '.join(msg_parts)} in the database!"
+
+        except Exception as e:
+            logger.error(f"Error updating academics for {self.user_id}: {e}")
+            return "Could not persist academic updates to the database."
+
+    def check_uploaded_documents(self) -> str:
+        """Checks the student's Knowledge Vault in MongoDB for uploaded resumes, research papers,
+        transcripts, or certificates.
+        Call whenever the student asks 'Have I uploaded my resume?', 'What documents do you have for me?',
+        or 'Is my resume in your system?'.
+        """
+        try:
+            doc_col = get_user_documents_collection()
+            docs = list(doc_col.find({"user_id": self.user_id}).sort("uploaded_at", -1))
+
+            if not docs:
+                return "You have not uploaded any documents or resume yet to your Knowledge Vault."
+
+            doc_names = [d.get("filename") for d in docs if d.get("filename")]
+            total_chunks = sum([d.get("chunk_count", 0) for d in docs])
+
+            has_resume = any("resume" in d.get("filename", "").lower() or d.get("category") == "resume" for d in docs)
+            resume_note = "Your resume is uploaded and indexed." if has_resume else "No resume document found."
+
+            self.action_history.append({
+                "action": "check_uploaded_documents",
+                "documents_count": len(docs),
+                "has_resume": has_resume,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            return (
+                f"Yes! You have {len(docs)} document(s) in your Knowledge Vault: {', '.join(doc_names)}. "
+                f"{resume_note} All documents are processed into {total_chunks} searchable vector chunks."
+            )
+        except Exception as e:
+            logger.error(f"Error checking documents for {self.user_id}: {e}")
+            return "Unable to access the Knowledge Vault document registry."
+
+    def query_knowledge_vault(self, query: str) -> str:
+        """Performs semantic vector search across the student's uploaded documents (resume, research papers,
+        project reports) in the Knowledge Vault to retrieve exact verified text excerpts.
+        Call whenever the student asks questions about the content of their resume, specific research papers,
+        publications, or document details (e.g. 'What is the title of the paper I published?').
+
+        Args:
+            query: The specific question or topic to search within the documents (e.g. 'title of published paper', 'IEEE research').
+        """
+        try:
+            from app.services.rag_service import rag_service
+            chunks = rag_service.search_vector_chunks(user_id=self.user_id, query_text=query, top_k=3)
+
+            if not chunks:
+                return f"No document excerpts found in your Knowledge Vault matching '{query}'."
+
+            excerpts = []
+            for c in chunks:
+                fname = c.get("filename") or "Uploaded Document"
+                page = c.get("page_start", 1)
+                text_snippet = c.get("text", "")[:350].strip()
+                excerpts.append(f"[{fname}, Page {page}]: \"{text_snippet}\"")
+
+            self.action_history.append({
+                "action": "query_knowledge_vault",
+                "query": query,
+                "matches": len(chunks),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+
+            return "Here is what I found in your verified uploaded documents:\n" + "\n".join(excerpts)
+
+        except Exception as e:
+            logger.error(f"Error querying Knowledge Vault for {self.user_id}: {e}")
+            return f"Error searching Knowledge Vault documents for '{query}'."
+

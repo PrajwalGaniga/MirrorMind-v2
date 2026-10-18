@@ -196,8 +196,8 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
           <div className="vector-heatmap-section">
             <div className="heatmap-header">
               <span>Live Vector Dimension Inspector (Preview of first 16 dimensions):</span>
-              <span style={{ fontSize: "0.75rem", color: "var(--accent-cyan)" }}>
-                Cyan = Positive Semantic Activation | Purple = Negative
+              <span style={{ fontSize: "0.75rem", color: "#0284C7", fontWeight: 700 }}>
+                Deep Blue = Positive Semantic Activation | Purple = Negative
               </span>
             </div>
 
@@ -211,9 +211,10 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
                     className="heatmap-cell"
                     style={{
                       backgroundColor: isPositive
-                        ? `rgba(6, 182, 212, ${0.15 + intensity * 0.7})`
-                        : `rgba(168, 85, 247, ${0.15 + intensity * 0.7})`,
-                      borderColor: isPositive ? "var(--accent-cyan)" : "var(--accent-purple)",
+                        ? `rgba(2, 132, 199, ${0.12 + intensity * 0.4})`
+                        : `rgba(124, 58, 237, ${0.12 + intensity * 0.4})`,
+                      borderColor: isPositive ? "#0284C7" : "#7C3AED",
+                      borderWidth: "1.5px",
                     }}
                   >
                     <span className="dim-index">d_{idx + 1}</span>
@@ -223,7 +224,7 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
               })}
             </div>
 
-            <p style={{ fontSize: "0.78rem", color: "var(--text-subtle)", marginTop: "10px" }}>
+            <p style={{ fontSize: "0.82rem", color: "#4B5563", marginTop: "12px", lineHeight: "1.5" }}>
               These 384 dense coordinates capture latent programming paradigms, cloud/devops exposure,
               and academic strengths without requiring manual keyword matching.
             </p>
@@ -336,7 +337,7 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
                   <div key={token} className="all-role-item">
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "0.8rem", color: "var(--text-main)" }}>{token}</span>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--accent-cyan)" }}>
+                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#0284C7" }}>
                         {(prob * 100).toFixed(2)}%
                       </span>
                     </div>
@@ -390,8 +391,8 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
                       key={lvl}
                       points={pts}
                       fill="none"
-                      stroke="rgba(255, 255, 255, 0.08)"
-                      strokeWidth="1"
+                      stroke="rgba(0, 0, 0, 0.12)"
+                      strokeWidth="1.2"
                     />
                   );
                 })}
@@ -406,8 +407,8 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
                       y1={center}
                       x2={x}
                       y2={y}
-                      stroke="rgba(255, 255, 255, 0.12)"
-                      strokeWidth="1"
+                      stroke="rgba(0, 0, 0, 0.15)"
+                      strokeWidth="1.2"
                     />
                   );
                 })}
@@ -479,7 +480,7 @@ export const MLPipelineVisualizer: React.FC<MLPipelineVisualizerProps> = ({
               <span className="mentor-icon">🤖</span>
               <div>
                 <strong>AI Career Mentor Evaluation</strong>
-                <div style={{ fontSize: "0.78rem", color: "var(--accent-cyan)" }}>
+                <div style={{ fontSize: "0.78rem", color: "#0284C7", fontWeight: 700 }}>
                   Target Role: {prediction.top_label} • Model: Gemini 3.8 Flash
                 </div>
               </div>
