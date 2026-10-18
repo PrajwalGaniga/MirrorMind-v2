@@ -54,15 +54,17 @@ def test_websocket_voice_chat():
         # 4. Test user prompt: features inquiry
         features_query = "I wanted to know whatever the features we have added in the project"
         websocket.send_json({"type": "user_message", "text": features_query})
-        resp_start = websocket.receive_json()
-        assert resp_start.get("type") == "stream_start"
 
         feature_chunks = []
+        action_found = None
         while True:
             msg = websocket.receive_json()
-            if msg.get("type") == "stream_chunk":
+            mtype = msg.get("type")
+            if mtype == "action_executed":
+                action_found = msg
+            elif mtype == "stream_chunk":
                 feature_chunks.append(msg.get("chunk", ""))
-            elif msg.get("type") == "stream_end":
+            elif mtype == "stream_end":
                 break
 
         full_features_text = "".join(feature_chunks)

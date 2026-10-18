@@ -10,6 +10,9 @@ interface Message {
   sender: "user" | "ai";
   text: string;
   timestamp: string;
+  isActionCard?: boolean;
+  actionType?: string;
+  actionData?: any;
 }
 
 type OrbState = "idle" | "listening" | "thinking" | "speaking";
@@ -29,13 +32,14 @@ export default function VoiceChatPage() {
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [voiceMuted, setVoiceMuted] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("Ready to communicate. Click 'Start Communication' below.");
+  const [actionsHistory, setActionsHistory] = useState<Array<{ id: string; action: string; data: any; timestamp: string }>>([]);
 
   // Transcript & Input State
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       sender: "ai",
-      text: "Hi there! I am your MirrorMind Voice Companion. Click 'Start Communication' to start our real-time voice chat!",
+      text: "Hi there! I am your MirrorMind Autonomous Voice Copilot. Ask about your career status, add projects or skills, or say 'Start Communication'!",
       timestamp: "Ready",
     },
   ]);
@@ -233,11 +237,13 @@ export default function VoiceChatPage() {
     setStatusMessage("MirrorMind is thinking...");
 
     // Send to WebSocket
+    const activeUserId = user?.email || "prajwal.seed@mirrormind.ai";
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
           type: "user_message",
           text: text.trim(),
+          user_id: activeUserId,
         })
       );
     } else {
@@ -247,6 +253,7 @@ export default function VoiceChatPage() {
           JSON.stringify({
             type: "user_message",
             text: text.trim(),
+            user_id: activeUserId,
           })
         );
       });
@@ -274,7 +281,28 @@ export default function VoiceChatPage() {
         try {
           const data = JSON.parse(event.data);
 
-          if (data.type === "stream_start") {
+          if (data.type === "action_executed") {
+            const actionRecord = {
+              id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+              action: data.action,
+              data: data.data,
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            };
+            setActionsHistory((prev) => [actionRecord, ...prev]);
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: "act-" + Date.now().toString() + Math.random().toString(36).substring(2, 6),
+                sender: "ai",
+                text: "",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                isActionCard: true,
+                actionType: data.action,
+                actionData: data.data,
+              },
+            ]);
+          } else if (data.type === "stream_start") {
             setOrbState("thinking");
             setStreamingAiText("");
           } else if (data.type === "stream_chunk") {
@@ -332,14 +360,15 @@ export default function VoiceChatPage() {
     setIsSessionActive(true);
     sessionActiveRef.current = true;
 
+    const activeUserId = user?.email || "prajwal.seed@mirrormind.ai";
     // Connect WebSocket if not connected
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       connectWebSocket(() => {
         // Send session start packet to prompt instant initial greeting
-        wsRef.current?.send(JSON.stringify({ type: "start_session" }));
+        wsRef.current?.send(JSON.stringify({ type: "start_session", user_id: activeUserId }));
       });
     } else {
-      wsRef.current.send(JSON.stringify({ type: "start_session" }));
+      wsRef.current.send(JSON.stringify({ type: "start_session", user_id: activeUserId }));
     }
 
     // Initialize & start speech recognition
@@ -655,37 +684,79 @@ export default function VoiceChatPage() {
             </div>
 
             {/* Quick Testing Scenario Chips */}
-            <div style={{ marginTop: "24px", width: "100%", textAlign: "left" }}>
+            <div style={{ marginTop: "20px", width: "100%", textAlign: "left" }}>
               <div style={{ fontSize: "0.78rem", color: "var(--text-subtle)", marginBottom: "8px", fontWeight: 600, textTransform: "uppercase" }}>
                 Suggested Voice Prompts
               </div>
               <div className="prompt-chips-container">
                 <button
-                  onClick={() => handleQuickChip("Hi")}
+                  onClick={() => handleQuickChip("What is my current status as a backend developer?")}
                   className="prompt-chip"
                 >
-                  👋 "Hi"
+                  🎯 "What is my current status as a backend developer?"
+                </button>
+                <button
+                  onClick={() => handleQuickChip("I want to add a project called Smart Cache built with Go and Redis")}
+                  className="prompt-chip"
+                >
+                  🛠️ "I want to add a project called Smart Cache built with Go and Redis"
+                </button>
+                <button
+                  onClick={() => handleQuickChip("I learned a new skill: Kubernetes")}
+                  className="prompt-chip"
+                >
+                  ⚡ "I learned a new skill: Kubernetes"
+                </button>
+                <button
+                  onClick={() => handleQuickChip("Give me a summary of my technical growth")}
+                  className="prompt-chip"
+                >
+                  📈 "Give me a summary of my technical growth"
                 </button>
                 <button
                   onClick={() => handleQuickChip("I wanted to know whatever the features we have added in the project")}
                   className="prompt-chip"
                 >
-                  🚀 "I wanted to know whatever the features we have added in the project"
+                  🚀 "What features have we added in the project?"
                 </button>
                 <button
-                  onClick={() => handleQuickChip("How does the PyTorch CareerMLP prediction model work?")}
+                  onClick={() => handleQuickChip("Who won the cricket match yesterday?")}
                   className="prompt-chip"
+                  style={{ borderColor: "rgba(239, 68, 68, 0.3)" }}
                 >
-                  🧠 "How does the PyTorch model work?"
-                </button>
-                <button
-                  onClick={() => handleQuickChip("What are the 5 skill radar pillars in MirrorMind?")}
-                  className="prompt-chip"
-                >
-                  📊 "What are the 5 skill radar pillars?"
+                  🛡️ "Who won the cricket match?" (Guardrail check)
                 </button>
               </div>
             </div>
+
+            {/* Recent Autonomous Actions Live Log */}
+            {actionsHistory.length > 0 && (
+              <div className="recent-actions-widget">
+                <div className="recent-actions-title">
+                  <span>⚡ Real-Time DB &amp; ML Actions</span>
+                  <span style={{ fontSize: "0.7rem", color: "#34d399", fontWeight: 700 }}>
+                    {actionsHistory.length} Live
+                  </span>
+                </div>
+                <div className="action-feed-list">
+                  {actionsHistory.map((act) => (
+                    <div key={act.id} className="action-feed-item">
+                      <div className="action-feed-label">
+                        <span className="pulse-dot-green"></span>
+                        <span>
+                          {act.action === "get_career_status" && `Status: ${act.data?.role} (${act.data?.confidence}%)`}
+                          {act.action === "add_project" && `Added Project: ${act.data?.title}`}
+                          {act.action === "add_skill" && `Added Skill: ${act.data?.skill?.toUpperCase()}`}
+                          {act.action === "add_internship" && `Internship: ${act.data?.role}`}
+                          {act.action === "get_student_growth_summary" && `Queried Growth Summary`}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-subtle)" }}>{act.timestamp}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Live Conversation Transcript */}
@@ -715,15 +786,116 @@ export default function VoiceChatPage() {
 
             {/* Transcript Messages Body */}
             <div className="transcript-body">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`transcript-message ${msg.sender}`}>
-                  <div className="transcript-sender">
-                    <span>{msg.sender === "user" ? (user?.displayName || "You") : "MirrorMind Voice"}</span>
-                    <span>• {msg.timestamp}</span>
+              {messages.map((msg) =>
+                msg.isActionCard ? (
+                  <div key={msg.id} className="action-executed-card">
+                    <div className="action-card-header">
+                      <div className="action-badge-row">
+                        <span className="action-type-pill">
+                          {msg.actionType === "add_project" && "🚀 Project Added"}
+                          {msg.actionType === "add_skill" && "⚡ Skill Radar Updated"}
+                          {msg.actionType === "get_career_status" && "🎯 Career Status Queried"}
+                          {msg.actionType === "add_internship" && "💼 Internship Recorded"}
+                          {msg.actionType === "get_student_growth_summary" && "📊 Growth Summary"}
+                        </span>
+                        <span className="db-sync-badge">
+                          <span className="pulse-dot-green"></span>
+                          {msg.actionType === "get_career_status" ? "Cached ML (0.2ms)" : "MongoDB Synced"}
+                        </span>
+                      </div>
+                      <span className="action-time">{msg.timestamp}</span>
+                    </div>
+
+                    <div className="action-card-content">
+                      {msg.actionType === "add_project" && (
+                        <>
+                          <div className="action-title">{msg.actionData?.title}</div>
+                          <div className="action-desc">{msg.actionData?.description}</div>
+                          {msg.actionData?.tech_stack && (
+                            <div className="tech-tags">
+                              {msg.actionData.tech_stack.map((t: string, idx: number) => (
+                                <span key={idx} className="tech-tag">
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="idle-queue-note">
+                            <span>⏳ Idle ML Debouncer:</span> PyTorch recalculation scheduled after inactivity
+                          </div>
+                        </>
+                      )}
+
+                      {msg.actionType === "add_skill" && (
+                        <div className="action-skill-box">
+                          <div>
+                            <span className="skill-highlight">{msg.actionData?.skill?.toUpperCase()}</span>
+                            <span className="skill-level" style={{ marginLeft: "8px" }}>
+                              (Level: {msg.actionData?.proficiency || "intermediate"})
+                            </span>
+                          </div>
+                          <div className="idle-queue-note">
+                            <span>⏳ Idle ML Debouncer:</span> PyTorch recalculation scheduled after inactivity
+                          </div>
+                        </div>
+                      )}
+
+                      {msg.actionType === "get_career_status" && (
+                        <div className="career-status-box">
+                          <div className="status-row">
+                            <span className="role-name">{msg.actionData?.role}</span>
+                            <span className="role-pct">{msg.actionData?.confidence}% Match</span>
+                          </div>
+                          <div className="progress-bar-bg">
+                            <div
+                              className="progress-bar-fill"
+                              style={{ width: `${Math.min(100, msg.actionData?.confidence || 0)}%` }}
+                            ></div>
+                          </div>
+                          <div className="role-rank-tag">Ranking: #{msg.actionData?.rank} Career Pathway (from Temp Storage)</div>
+                        </div>
+                      )}
+
+                      {msg.actionType === "add_internship" && (
+                        <div className="internship-box">
+                          <div className="action-title">
+                            {msg.actionData?.role} @ {msg.actionData?.company}
+                          </div>
+                          <div className="idle-queue-note">
+                            <span>⏳ Idle ML Debouncer:</span> Background update queued
+                          </div>
+                        </div>
+                      )}
+
+                      {msg.actionType === "get_student_growth_summary" && (
+                        <div className="growth-summary-grid">
+                          <div className="growth-stat">
+                            <span className="stat-num">{msg.actionData?.skills_count}</span>
+                            <span className="stat-lbl">Skills</span>
+                          </div>
+                          <div className="growth-stat">
+                            <span className="stat-num">{msg.actionData?.projects_count}</span>
+                            <span className="stat-lbl">Projects</span>
+                          </div>
+                          <div className="growth-stat">
+                            <span className="stat-num">{msg.actionData?.internships_count}</span>
+                            <span className="stat-lbl">Internships</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="message-bubble">{msg.text}</div>
-                </div>
-              ))}
+                ) : (
+                  <div key={msg.id} className={`transcript-message ${msg.sender}`}>
+                    <div className="transcript-sender">
+                      <span>{msg.sender === "user" ? (user?.displayName || "You") : "MirrorMind Voice"}</span>
+                      <span>• {msg.timestamp}</span>
+                    </div>
+                    <div className="message-bubble">{msg.text}</div>
+                  </div>
+                )
+              )}
+
 
               {/* Streaming AI Chunk Box */}
               {streamingAiText && (
