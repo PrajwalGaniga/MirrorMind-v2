@@ -28,11 +28,18 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
   apiUrl = "http://localhost:8000",
   onProfileUpdated,
 }) => {
+  // Extract clean, human-friendly name (handles "P PRAJWAL" -> "Prajwal")
+  const nameParts = (student.name || "Prajwal").split(" ").filter(Boolean);
+  const friendlyName =
+    nameParts.length > 1 && nameParts[0].length === 1
+      ? nameParts[1]
+      : nameParts[0] || "Prajwal";
+
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
   const [wsStatus, setWsStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [assistantText, setAssistantText] = useState<string>(
-    `Hello, ${student.name.split(" ")[0]}. How can I help you today?`
+    `Hello, ${friendlyName}. How can I help you today?`
   );
   const [userTranscript, setUserTranscript] = useState<string>("");
   const [actionNotice, setActionNotice] = useState<ActionItem | null>(null);
@@ -43,6 +50,12 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
   const isSpeakingRef = useRef<boolean>(false);
   const sessionActiveRef = useRef<boolean>(false);
   const audioIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamingBufferRef = useRef<string>("");
+  const onProfileUpdatedRef = useRef(onProfileUpdated);
+
+  useEffect(() => {
+    onProfileUpdatedRef.current = onProfileUpdated;
+  }, [onProfileUpdated]);
 
   useEffect(() => {
     sessionActiveRef.current = isSessionActive;
@@ -61,7 +74,7 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
           Math.floor(Math.random() * 12) + 4,
           Math.floor(Math.random() * 16) + 4,
         ]);
-      }, 120);
+      }, 110);
     } else {
       if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
       setAudioBars([4, 8, 12, 6, 10, 5, 8]);
@@ -72,63 +85,193 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
     };
   }, [isSessionActive, orbState]);
 
+  // Restart Speech Recognition safely
+  const restartRecognition = useCallback(() => {
+    if (!recognitionRef.current || !sessionActiveRef.current || isSpeakingRef.current) return;
+    try {
+      recognitionRef.current.abort();
+      setTimeout(() => {
+        if (sessionActiveRef.current && !isSpeakingRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch {
+            // ignore if already started
+          }
+        }
+      }, 250);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Speech Synthesis
-  const speakText = useCallback((text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const speakText = useCallback(
+    (text: string) => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        setOrbState(sessionActiveRef.current ? "listening" : "idle");
+        return;
+      }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
 
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice =
-      voices.find(
-        (v) =>
-          v.lang.startsWith("en") &&
-          (v.name.includes("Natural") ||
-            v.name.includes("Google") ||
-            v.name.includes("Samantha"))
-      ) || voices.find((v) => v.lang.startsWith("en"));
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice =
+        voices.find(
+          (v) =>
+            v.lang.startsWith("en") &&
+            (v.name.includes("Natural") ||
+              v.name.includes("Google") ||
+              v.name.includes("Samantha") ||
+              v.name.includes("Daniel"))
+        ) || voices.find((v) => v.lang.startsWith("en"));
 
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      utterance.onstart = () => {
+        isSpeakingRef.current = true;
+        setOrbState("speaking");
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.abort();
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      utterance.onend = () => {
+        isSpeakingRef.current = false;
+        if (sessionActiveRef.current) {
+          setOrbState("listening");
+          restartRecognition();
+        } else {
+          setOrbState("idle");
+        }
+      };
+
+      utterance.onerror = () => {
+        isSpeakingRef.current = false;
+        if (sessionActiveRef.current) {
+          setOrbState("listening");
+          restartRecognition();
+        } else {
+          setOrbState("idle");
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [restartRecognition]
+  );
+
+  // Connect WebSocket to Gemini Live backend
+  const connectWebSocket = useCallback((onOpenCallback?: () => void) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      if (onOpenCallback) onOpenCallback();
+      return;
     }
 
-    utterance.onstart = () => {
-      isSpeakingRef.current = true;
-      setOrbState("speaking");
-      if (recognitionRef.current) {
+    try {
+      setWsStatus("connecting");
+      const host = typeof window !== "undefined" ? window.location.hostname || "localhost" : "localhost";
+      const wsUrl = `ws://${host}:8000/api/ws/voice-chat`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        setWsStatus("connected");
+        wsRef.current = ws;
+        if (onOpenCallback) onOpenCallback();
+      };
+
+      ws.onmessage = (event) => {
         try {
-          recognitionRef.current.abort();
-        } catch {
-          // ignore
+          const data = JSON.parse(event.data);
+
+          if (data.type === "stream_start") {
+            setOrbState("thinking");
+            streamingBufferRef.current = "";
+          } else if (data.type === "stream_chunk") {
+            setOrbState("thinking");
+            streamingBufferRef.current += data.chunk;
+            setAssistantText(streamingBufferRef.current);
+          } else if (data.type === "stream_end") {
+            const reply = data.full_text || streamingBufferRef.current || "";
+            streamingBufferRef.current = "";
+            if (reply.trim()) {
+              setAssistantText(reply.trim());
+              speakText(reply.trim());
+            } else {
+              setOrbState(sessionActiveRef.current ? "listening" : "idle");
+            }
+          } else if (data.type === "action_executed") {
+            const actionName = data.action || data.data?.action || "database_update";
+            const message = data.data?.message || data.message || `Action executed: ${actionName}`;
+            setActionNotice({
+              id: Date.now().toString(),
+              type: actionName,
+              text: message,
+              time: "Just now",
+            });
+            setTimeout(() => setActionNotice(null), 5000);
+            if (onProfileUpdatedRef.current) onProfileUpdatedRef.current();
+          } else if (data.type === "ai_response") {
+            setAssistantText(data.text);
+            speakText(data.text);
+          } else if (data.type === "error") {
+            console.error("Voice chat error from backend:", data.message);
+            setAssistantText(`AI Notice: ${data.message}`);
+            setOrbState(sessionActiveRef.current ? "listening" : "idle");
+          }
+        } catch (err) {
+          console.error("Error parsing WebSocket message:", err);
         }
-      }
-    };
+      };
 
-    utterance.onend = () => {
-      isSpeakingRef.current = false;
-      if (sessionActiveRef.current) {
-        setOrbState("listening");
-        restartRecognition();
+      ws.onclose = () => {
+        setWsStatus("disconnected");
+      };
+
+      ws.onerror = () => {
+        setWsStatus("disconnected");
+      };
+
+      wsRef.current = ws;
+    } catch (err) {
+      console.error("WebSocket connection failure:", err);
+      setWsStatus("disconnected");
+    }
+  }, [speakText]);
+
+  // Send message over WebSocket
+  const sendUserMessage = useCallback(
+    (text: string) => {
+      if (!text.trim()) return;
+
+      setUserTranscript(text.trim());
+      setOrbState("thinking");
+
+      const activeEmail = student.email || "prajwal.seed@mirrormind.ai";
+      const payload = {
+        type: "user_message",
+        text: text.trim(),
+        user_id: activeEmail,
+      };
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(payload));
       } else {
-        setOrbState("idle");
+        connectWebSocket(() => {
+          wsRef.current?.send(JSON.stringify(payload));
+        });
       }
-    };
-
-    utterance.onerror = () => {
-      isSpeakingRef.current = false;
-      if (sessionActiveRef.current) {
-        setOrbState("listening");
-        restartRecognition();
-      } else {
-        setOrbState("idle");
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, []);
+    },
+    [connectWebSocket, student.email]
+  );
 
   // Web Speech Recognition
   const initSpeechRecognition = useCallback(() => {
@@ -167,10 +310,12 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
         }
 
         const transcript = final || interim;
-        setUserTranscript(transcript);
+        if (transcript.trim()) {
+          setUserTranscript(transcript.trim());
+        }
 
         if (final && final.trim().length > 1) {
-          handleUserUtterance(final.trim());
+          sendUserMessage(final.trim());
         }
       };
 
@@ -192,149 +337,26 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
     } catch (err) {
       console.error("Failed to initialize speech recognition:", err);
     }
-  }, []);
-
-  const restartRecognition = () => {
-    if (!recognitionRef.current || !sessionActiveRef.current || isSpeakingRef.current) return;
-    try {
-      recognitionRef.current.abort();
-      setTimeout(() => {
-        if (sessionActiveRef.current && !isSpeakingRef.current) {
-          recognitionRef.current.start();
-        }
-      }, 200);
-    } catch {
-      // ignore
-    }
-  };
-
-  // Connect WebSocket to Gemini Live backend
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
-
-    try {
-      setWsStatus("connecting");
-      const wsUrl = apiUrl.replace(/^http/, "ws") + "/api/ws/voice-chat";
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        setWsStatus("connected");
-        ws.send(
-          JSON.stringify({
-            type: "init",
-            user: {
-              name: student.name,
-              email: student.email,
-              cgpa: student.cgpa,
-              skills: student.skills,
-              projects: student.projects,
-              internships: student.internships,
-            },
-          })
-        );
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "ai_response") {
-            setAssistantText(data.text);
-            speakText(data.text);
-          } else if (data.type === "action_executed") {
-            setActionNotice({
-              id: Date.now().toString(),
-              type: data.action || "database_update",
-              text: data.message || "Database updated successfully.",
-              time: "Just now",
-            });
-            if (onProfileUpdated) onProfileUpdated();
-          }
-        } catch {
-          // ignore
-        }
-      };
-
-      ws.onclose = () => {
-        setWsStatus("disconnected");
-      };
-
-      ws.onerror = () => {
-        setWsStatus("disconnected");
-      };
-
-      wsRef.current = ws;
-    } catch (err) {
-      console.error("WebSocket connection failure:", err);
-      setWsStatus("disconnected");
-    }
-  }, [apiUrl, onProfileUpdated, speakText, student]);
-
-  // Handle User Message / Speech
-  const handleUserUtterance = async (text: string) => {
-    setOrbState("thinking");
-
-    // Check for direct local action triggers (e.g. "add skill Python")
-    const lower = text.toLowerCase();
-    if (lower.startsWith("add skill") || lower.startsWith("add ")) {
-      const skillName = text.replace(/^(add skill|add)/i, "").trim();
-      if (skillName && !student.skills.includes(skillName.toLowerCase())) {
-        try {
-          await fetch(`${apiUrl}/api/student/profile/${encodeURIComponent(student.email)}/skills`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ skills: [skillName.toLowerCase()] }),
-          });
-
-          setActionNotice({
-            id: Date.now().toString(),
-            type: "skill_added",
-            text: `Skill Added: ${skillName.toUpperCase()}`,
-            time: "Just now",
-          });
-          const reply = `I have added ${skillName} to your verified technical skills in MongoDB Atlas!`;
-          setAssistantText(reply);
-          speakText(reply);
-          if (onProfileUpdated) onProfileUpdated();
-          return;
-        } catch {
-          // fallback to websocket
-        }
-      }
-    }
-
-    // Send through WebSocket if connected
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "user_message", text }));
-    } else {
-      // Local intelligent response fallback
-      setTimeout(() => {
-        let reply = `Based on your profile, you have strong alignment in Machine Learning and Full Stack development with a CGPA of ${student.cgpa}.`;
-        if (lower.includes("project")) {
-          reply = `You have ${student.projects.length} verified projects in your dossier, including ${student.projects[0]?.title || "MedBridge"}.`;
-        } else if (lower.includes("skill")) {
-          reply = `You have ${student.skills.length} skills listed, featuring ${student.skills.slice(0, 4).join(", ")}.`;
-        }
-        setAssistantText(reply);
-        speakText(reply);
-      }, 700);
-    }
-  };
+  }, [restartRecognition, sendUserMessage]);
 
   // Toggle Voice Chat Session
   const toggleVoiceSession = () => {
     if (!isSessionActive) {
       setIsSessionActive(true);
-      connectWebSocket();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-          setOrbState("listening");
-        } catch {
-          // ignore
+      sessionActiveRef.current = true;
+      connectWebSocket(() => {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.start();
+            setOrbState("listening");
+          } catch {
+            // ignore
+          }
         }
-      }
+      });
     } else {
       setIsSessionActive(false);
+      sessionActiveRef.current = false;
       setOrbState("idle");
       if (recognitionRef.current) {
         try {
@@ -352,13 +374,19 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
   // Trigger Interactive Demo
   const triggerDemo = () => {
     const demoPrompt = "How is my career alignment looking?";
-    setUserTranscript(demoPrompt);
-    handleUserUtterance(demoPrompt);
+    sendUserMessage(demoPrompt);
   };
 
+  // Mount effect: eagerly load voices and connect WS
   useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+    }
     initSpeechRecognition();
+    connectWebSocket();
+
     return () => {
+      sessionActiveRef.current = false;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -366,19 +394,20 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
           // ignore
         }
       }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
-  }, [initSpeechRecognition]);
-
-  const firstName = student.name.split(" ")[0].toUpperCase();
+  }, [connectWebSocket, initSpeechRecognition]);
 
   return (
     <div className="voice-hero-card">
       {/* Left Column: Greeting, Description, Actions */}
       <div className="voice-hero-left">
-        <div className="voice-hero-pretag">HELLO, I&apos;M {firstName}</div>
+        <div className="voice-hero-pretag">HELLO, I&apos;M {friendlyName.toUpperCase()}</div>
         <h1 className="voice-hero-title">
           Your <span>AI Voice Co-Pilot</span> is Ready
         </h1>
@@ -449,6 +478,7 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
               fontSize: "0.78rem",
               fontWeight: 600,
               marginTop: "4px",
+              transition: "all 0.3s ease",
             }}
           >
             <span>✨</span>
@@ -474,7 +504,12 @@ export const HeroVoiceAssistant: React.FC<HeroVoiceAssistantProps> = ({
         </div>
 
         {/* Circular Concentric Glowing Voice Orb */}
-        <div className="hero-voice-orb-container" onClick={toggleVoiceSession} style={{ cursor: "pointer" }} title="Click orb to toggle voice">
+        <div
+          className="hero-voice-orb-container"
+          onClick={toggleVoiceSession}
+          style={{ cursor: "pointer" }}
+          title={isSessionActive ? "Click orb to stop voice" : "Click orb to speak"}
+        >
           <div className="orb-ring-outer" />
           <div className="orb-ring-middle" />
           <div className={`orb-core ${orbState}`}>
