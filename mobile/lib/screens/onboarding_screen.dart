@@ -40,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   String _collegeTier = 'Tier-2';
   int _semester = 6;
-  double _cgpa = 8.2;
+  double _cgpa = 9.25;
   int _backlogCount = 0;
   String _careerInterest = 'AIML_ENGINEER';
   int _communicationRating = 4;
@@ -58,44 +58,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? _errorMessage;
 
   final List<String> _commonSkills = [
-    'Python',
-    'PyTorch',
-    'React',
-    'Next.js',
-    'FastAPI',
-    'MongoDB',
-    'Docker',
-    'SQL',
-    'TypeScript',
-    'Node.js',
-    'AWS',
-    'TensorFlow',
-    'Git',
+    'Python', 'PyTorch', 'Transformers', 'FastAPI', 'MongoDB',
+    'Docker', 'Flutter', 'TypeScript', 'React', 'Go',
+    'PostgreSQL', 'Redis', 'Kubernetes', 'AWS', 'Scikit-learn',
   ];
 
   final List<Map<String, String>> _roleOptions = [
     {'value': 'AIML_ENGINEER', 'label': 'AI / ML Engineer'},
-    {'value': 'SWE_BACKEND', 'label': 'Backend Developer'},
-    {'value': 'FULLSTACK_DEV', 'label': 'Fullstack Developer'},
+    {'value': 'BACKEND_DEVELOPER', 'label': 'Backend Developer (Distributed Systems)'},
+    {'value': 'FULLSTACK_DEVELOPER', 'label': 'Full-Stack Developer'},
+    {'value': 'DATA_SCIENTIST', 'label': 'Data Scientist'},
+    {'value': 'CLOUD_DEVOPS_ENGINEER', 'label': 'Cloud DevOps / Platform SRE'},
     {'value': 'DATA_ENGINEER', 'label': 'Data Engineer'},
-    {'value': 'DEVOPS_CLOUD', 'label': 'DevOps & Cloud Engineer'},
-    {'value': 'DATA_ANALYST', 'label': 'Data Analyst'},
-    {'value': 'CYBERSECURITY', 'label': 'Cybersecurity Analyst'},
-    {'value': 'EMBEDDED_IOT', 'label': 'Embedded Systems & IoT'},
-    {'value': 'SWE_FRONTEND', 'label': 'Frontend Developer'},
-    {'value': 'PRODUCT_MANAGER', 'label': 'Technical Product Manager'},
+    {'value': 'MOBILE_DEVELOPER', 'label': 'Mobile App Developer (Flutter/React Native)'},
+    {'value': 'SECURITY_ENGINEER', 'label': 'Cybersecurity Engineer'},
+    {'value': 'SYSTEMS_SOFTWARE_ENGINEER', 'label': 'Systems Software Engineer (C++/Rust)'},
+    {'value': 'FRONTEND_DEVELOPER', 'label': 'Frontend Developer (UI/UX Engineering)'},
   ];
 
   @override
   void initState() {
     super.initState();
     final p = widget.initialProfile;
+
     _nameController = TextEditingController(text: p?.name ?? widget.userName);
     _phoneController = TextEditingController(text: p?.phone ?? '');
-    _collegeController = TextEditingController(text: p?.collegeName ?? 'Visvesvaraya Technological University');
-    _branchController = TextEditingController(text: p?.branch ?? 'Computer Science & Engineering');
-    _githubController = TextEditingController(text: p?.githubUrl ?? '');
-    _linkedinController = TextEditingController(text: p?.linkedinUrl ?? '');
+    _collegeController = TextEditingController(text: p?.collegeName ?? 'Visvesvaraya Technological University (SIT)');
+    _branchController = TextEditingController(text: p?.branch ?? 'Computer Science (AI & ML)');
+    _githubController = TextEditingController(text: p?.githubUrl ?? 'https://github.com/PrajwalGaniga');
+    _linkedinController = TextEditingController(text: p?.linkedinUrl ?? 'https://linkedin.com/in/prajwalganiga');
     _skillInputController = TextEditingController();
 
     if (p != null) {
@@ -113,21 +104,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _projects = List.from(p.projects);
       _internships = List.from(p.internships);
     } else {
-      _skills = ['Python', 'FastAPI', 'PyTorch', 'React', 'MongoDB'];
+      _skills = ['Python', 'PyTorch', 'Transformers', 'FastAPI', 'MongoDB', 'Docker', 'Flutter'];
       _projects = [
         ProjectItem(
-          title: 'MirrorMind Career AI Platform',
-          description: 'Deep neural network and dense embedding pipeline for career guidance.',
-          techStack: ['Python', 'FastAPI', 'PyTorch', 'MongoDB'],
+          title: 'MirrorMind v2: Autonomous Career Copilot',
+          description: 'Hybrid Bi-Encoder + Multi-Task CareerMLP Grounding architecture with live instrumented forward passes and real-time voice mentorship.',
+          techStack: ['PyTorch', 'FastAPI', 'Transformers', 'MongoDB Vector Search', 'Flutter'],
           githubUrl: 'https://github.com/PrajwalGaniga/MirrorMind-v2',
         ),
       ];
       _internships = [
         InternshipItem(
-          companyName: 'ZenLog Tech',
-          role: 'AI Engineering Intern',
-          domain: 'AI / ML',
-          description: 'Engineered PyTorch neural models and deployed microservices.',
+          companyName: 'Immenza True Care',
+          role: 'Full Stack & AI Engineer Intern',
+          domain: 'HealthTech Systems',
+          isCurrent: true,
+          description: 'Engineered scalable microservices and integrated diagnostic ML inference pipelines.',
         ),
       ];
     }
@@ -147,55 +139,65 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _handleResumeExtracted(ExtractedResumeData data, String url, String filename) {
     setState(() {
+      _resumeUrl = url;
+      _resumeFilename = filename;
+
       if (data.name != null && data.name!.isNotEmpty) _nameController.text = data.name!;
       if (data.phone != null && data.phone!.isNotEmpty) _phoneController.text = data.phone!;
       if (data.college != null && data.college!.isNotEmpty) _collegeController.text = data.college!;
       if (data.branch != null && data.branch!.isNotEmpty) _branchController.text = data.branch!;
-      if (data.cgpa != null) _cgpa = data.cgpa!;
-      if (data.githubUrl != null) _githubController.text = data.githubUrl!;
-      if (data.linkedinUrl != null) _linkedinController.text = data.linkedinUrl!;
+      if (data.cgpa != null && data.cgpa! > 0) _cgpa = data.cgpa!;
+      if (data.githubUrl != null && data.githubUrl!.isNotEmpty) _githubController.text = data.githubUrl!;
+      if (data.linkedinUrl != null && data.linkedinUrl!.isNotEmpty) _linkedinController.text = data.linkedinUrl!;
 
-      _resumeUrl = url;
-      _resumeFilename = filename;
-
-      // Merge skills
       for (final s in data.skills) {
         if (!_skills.any((existing) => existing.toLowerCase() == s.toLowerCase())) {
           _skills.add(s);
         }
       }
 
-      // Merge projects
-      if (data.projects.isNotEmpty) {
-        _projects = data.projects.map((p) {
-          return ProjectItem(
-            title: p['title'] ?? 'Project',
-            description: p['description'] ?? 'Extracted from resume',
+      for (final p in data.projects) {
+        final title = (p['title'] ?? '').toString();
+        if (title.isNotEmpty && !_projects.any((existing) => existing.title.toLowerCase() == title.toLowerCase())) {
+          _projects.add(ProjectItem(
+            title: title,
+            description: (p['description'] ?? '').toString(),
             techStack: (p['tech_stack'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-          );
-        }).toList();
+            githubUrl: p['github_url'],
+            liveDemoUrl: p['live_demo_url'],
+          ));
+        }
       }
 
-      // Merge internships
-      if (data.internships.isNotEmpty) {
-        _internships = data.internships.map((i) {
-          return InternshipItem(
-            companyName: i['company_name'] ?? 'Company',
-            role: i['role'] ?? 'Intern',
-            domain: i['domain'],
-          );
-        }).toList();
+      for (final exp in data.internships) {
+        final company = (exp['company_name'] ?? '').toString();
+        if (company.isNotEmpty && !_internships.any((existing) => existing.companyName.toLowerCase() == company.toLowerCase())) {
+          _internships.add(InternshipItem(
+            companyName: company,
+            domain: exp['domain'],
+            role: (exp['role'] ?? 'Intern').toString(),
+            startDate: exp['start_date'],
+            endDate: exp['end_date'],
+            isCurrent: exp['is_current'] ?? false,
+            description: exp['description'],
+          ));
+        }
       }
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🎉 AI extracted ${data.skills.length} skills & ${data.projects.length} projects!'),
+        backgroundColor: AppTheme.accentEmerald,
+      ),
+    );
   }
 
-  void _addSkill(String s) {
-    final clean = s.trim();
-    if (clean.isEmpty) return;
-    if (!_skills.any((existing) => existing.toLowerCase() == clean.toLowerCase())) {
-      setState(() {
-        _skills.add(clean);
-      });
+  void _addSkill(String skill) {
+    final s = skill.trim();
+    if (s.isEmpty) return;
+    if (!_skills.any((item) => item.toLowerCase() == s.toLowerCase())) {
+      setState(() => _skills.add(s));
     }
     _skillInputController.clear();
   }
@@ -258,7 +260,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       );
 
       if (mounted) {
-        setState(() => _isSubmitting = false);
         widget.onSuccess(saved, prediction);
       }
     } catch (e) {
@@ -274,10 +275,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.shellBase,
       appBar: AppBar(
-        title: const Text('Student Career Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('Student Career Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
         leading: widget.onCancel != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -287,28 +287,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Fast-Track Resume Dropzone
               ResumeUploadCard(onExtracted: _handleResumeExtracted),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               if (_errorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentRed.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.accentRed.withOpacity(0.3)),
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFECACA)),
                   ),
                   child: Text(
                     '⚠️ $_errorMessage',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
               ],
 
               // 1. Identity & Online Presence
@@ -319,31 +319,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _sectionTitle('STEP 1: IDENTITY & CONTACT'),
                     const SizedBox(height: 14),
 
-                    // Avatar Preview & Luffy Chip
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 28,
-                          backgroundColor: AppTheme.accentCyan.withOpacity(0.2),
+                          radius: 26,
+                          backgroundColor: AppTheme.surfaceMuted,
                           backgroundImage: NetworkImage(_avatarUrl),
                         ),
                         const SizedBox(width: 14),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Profile Avatar', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Hosted on Cloudinary CDN',
-                                style: TextStyle(fontSize: 11, color: AppTheme.textSubtle.withOpacity(0.9)),
-                              ),
+                              Text('Student Avatar', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
+                              SizedBox(height: 2),
+                              Text('Hosted on Cloudinary CDN', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     TextField(
                       controller: _nameController,
@@ -374,7 +370,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 2. Academic Background
               GlassCard(
@@ -391,7 +387,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 12),
 
                     DropdownButtonFormField<String>(
-                      value: _collegeTier,
+                      initialValue: _collegeTier,
                       decoration: const InputDecoration(labelText: 'College Tier'),
                       items: const [
                         DropdownMenuItem(value: 'Tier-1', child: Text('Tier-1 (IITs, NITs, BITS)')),
@@ -409,7 +405,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 16),
 
                     // Semester Selector
-                    Text('Current Semester: Sem $_semester', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('Current Semester: Sem $_semester', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -417,10 +413,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         final sem = i + 1;
                         final isSel = _semester == sem;
                         return ChoiceChip(
-                          label: Text('Sem $sem', style: TextStyle(fontSize: 11, color: isSel ? Colors.white : AppTheme.textMuted)),
+                          label: Text('Sem $sem', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isSel ? Colors.white : AppTheme.textPrimary)),
                           selected: isSel,
-                          selectedColor: AppTheme.accentIndigo.withOpacity(0.4),
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          selectedColor: AppTheme.charcoal,
+                          backgroundColor: AppTheme.surfaceSoft,
                           onSelected: (_) => setState(() => _semester = sem),
                         );
                       }),
@@ -431,10 +427,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Cumulative GPA (CGPA):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                        Text(
-                          _cgpa.toStringAsFixed(1),
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.accentCyan),
+                        const Text('Cumulative GPA (CGPA):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.charcoal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _cgpa.toStringAsFixed(2),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.accent),
+                          ),
                         ),
                       ],
                     ),
@@ -443,13 +446,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       min: 5.0,
                       max: 10.0,
                       divisions: 50,
-                      activeColor: AppTheme.accentCyan,
+                      activeColor: AppTheme.charcoal,
+                      inactiveColor: AppTheme.surfaceMuted,
                       onChanged: (v) => setState(() => _cgpa = v),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 3. Career Aspirations
               GlassCard(
@@ -460,7 +464,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 14),
 
                     DropdownButtonFormField<String>(
-                      value: _careerInterest,
+                      initialValue: _careerInterest,
                       decoration: const InputDecoration(labelText: 'Target Career Role'),
                       items: _roleOptions.map((r) {
                         return DropdownMenuItem(value: r['value'], child: Text(r['label']!));
@@ -469,11 +473,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Communication Rating
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Communication Self-Rating:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        const Text('Communication Self-Rating:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
                         Row(
                           children: List.generate(5, (i) {
                             final star = i + 1;
@@ -481,8 +484,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               onTap: () => setState(() => _communicationRating = star),
                               child: Icon(
                                 Icons.star,
-                                size: 20,
-                                color: _communicationRating >= star ? AppTheme.accentAmber : Colors.white.withOpacity(0.15),
+                                size: 22,
+                                color: _communicationRating >= star ? AppTheme.accent : AppTheme.surfaceMuted,
                               ),
                             );
                           }),
@@ -492,7 +495,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 14),
 
                     DropdownButtonFormField<String>(
-                      value: _workStyle,
+                      initialValue: _workStyle,
                       decoration: const InputDecoration(labelText: 'Work Style Preference'),
                       items: const [
                         DropdownMenuItem(value: 'hybrid', child: Text('🏢 Hybrid (Office + Remote)')),
@@ -505,7 +508,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 4. Skills Cloud
               GlassCard(
@@ -513,30 +516,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _sectionTitle('STEP 4: TECHNICAL SKILLS (${_skills.length})'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Feeds the 384-D dense embedding vector space',
-                      style: TextStyle(fontSize: 11.5, color: AppTheme.textSubtle.withOpacity(0.9)),
-                    ),
+                    const SizedBox(height: 6),
+                    const Text('Feeds the 384-D dense embedding vector space:', style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
                     const SizedBox(height: 12),
 
-                    // Active Skill Chips
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: _skills.map((s) {
-                        return Chip(
-                          label: Text(s, style: const TextStyle(fontSize: 11.5, color: Color(0xFFA5F3FC))),
-                          backgroundColor: AppTheme.accentCyan.withOpacity(0.12),
-                          side: BorderSide(color: AppTheme.accentCyan.withOpacity(0.3)),
-                          deleteIcon: const Icon(Icons.close, size: 14, color: AppTheme.accentCyan),
-                          onDeleted: () => setState(() => _skills.remove(s)),
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceSoft,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: AppTheme.borderSubtle),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () => setState(() => _skills.remove(s)),
+                                child: const Icon(Icons.close, size: 14, color: AppTheme.textMuted),
+                              ),
+                            ],
+                          ),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
-                    // Add Custom Skill
                     Row(
                       children: [
                         Expanded(
@@ -550,18 +560,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.add_circle, color: AppTheme.accentCyan, size: 32),
+                          icon: const Icon(Icons.add_circle, color: AppTheme.charcoal, size: 32),
                           onPressed: () => _addSkill(_skillInputController.text),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
 
-                    // Suggested chips
-                    Text(
-                      'Quick Add Suggestions:',
-                      style: TextStyle(fontSize: 11, color: AppTheme.textSubtle.withOpacity(0.85)),
-                    ),
+                    const Text('Quick Add Suggestions:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted)),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -570,8 +576,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           .where((s) => !_skills.any((sk) => sk.toLowerCase() == s.toLowerCase()))
                           .map((s) {
                         return ActionChip(
-                          label: Text('+ $s', style: const TextStyle(fontSize: 11)),
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          label: Text('+ $s', style: const TextStyle(fontSize: 11, color: AppTheme.textPrimary)),
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: AppTheme.borderSubtle),
                           onPressed: () => _addSkill(s),
                         );
                       }).toList(),
@@ -579,7 +586,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // 5. Projects
               GlassCard(
@@ -596,7 +603,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               _projects.add(ProjectItem(title: '', description: ''));
                             });
                           },
-                          child: const Text('+ Add Project', style: TextStyle(fontSize: 12, color: AppTheme.accentCyan)),
+                          child: const Text('+ Add Project', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
                         ),
                       ],
                     ),
@@ -607,18 +614,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.03),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                          color: AppTheme.surfaceSoft,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppTheme.borderSubtle),
                         ),
                         child: Column(
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Project #${idx + 1}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                                Text('Project #${idx + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppTheme.textPrimary)),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: AppTheme.accentRed, size: 18),
+                                  icon: const Icon(Icons.delete_outline, color: AppTheme.accentRed, size: 18),
                                   onPressed: () => setState(() => _projects.removeAt(idx)),
                                 ),
                               ],
@@ -655,14 +662,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               // Submit Button
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitProfile,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: AppTheme.accentCyan,
+                  backgroundColor: AppTheme.charcoal,
                 ),
                 child: _isSubmitting
                     ? Row(
@@ -671,21 +678,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.bgDark),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           ),
                           const SizedBox(width: 12),
                           Text(
                             _submitStep,
-                            style: const TextStyle(color: AppTheme.bgDark, fontWeight: FontWeight.w700, fontSize: 13),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ],
                       )
                     : const Text(
-                        '🚀 Save Profile & Run Career AI',
+                        'Save Profile & Run PyTorch Career AI',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                       ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -695,17 +702,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _sectionTitle(String title) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.accentIndigo.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(4),
+        color: AppTheme.charcoal,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.accentCyan,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: AppTheme.accent,
           letterSpacing: 0.5,
         ),
       ),

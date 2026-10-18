@@ -9,7 +9,7 @@ class SkillRadarChart extends StatelessWidget {
   const SkillRadarChart({
     super.key,
     required this.scores,
-    this.size = 240,
+    this.size = 230,
   });
 
   @override
@@ -23,12 +23,12 @@ class SkillRadarChart extends StatelessWidget {
             painter: _RadarPainter(scores: scores),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         // Metric Score Bars below
         ...scores.entries.map((entry) {
           final score = entry.value;
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -37,26 +37,30 @@ class SkillRadarChart extends StatelessWidget {
                   children: [
                     Text(
                       entry.key,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
                     Text(
                       '$score / 100',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.accentCyan,
+                        color: AppTheme.charcoal,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(
-                    value: score / 100,
+                    value: (score / 100).clamp(0.0, 1.0),
                     minHeight: 6,
-                    backgroundColor: Colors.white.withOpacity(0.06),
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
+                    backgroundColor: AppTheme.surfaceMuted,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accent),
                   ),
                 ),
               ],
@@ -76,17 +80,17 @@ class _RadarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) - 30;
+    final radius = (size.width / 2) - 28;
     final keys = scores.keys.toList();
     final count = keys.isEmpty ? 5 : keys.length;
 
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
+      ..color = AppTheme.borderSubtle
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
     final axisPaint = Paint()
-      ..color = Colors.white.withOpacity(0.12)
+      ..color = AppTheme.borderSubtle
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -118,14 +122,14 @@ class _RadarPainter extends CustomPainter {
       // Label
       if (i < keys.length) {
         final label = keys[i];
-        final labelX = center.dx + (radius + 18) * math.cos(angle);
-        final labelY = center.dy + (radius + 18) * math.sin(angle);
+        final labelX = center.dx + (radius + 16) * math.cos(angle);
+        final labelY = center.dy + (radius + 16) * math.sin(angle);
 
         final textSpan = TextSpan(
           text: _shortLabel(label),
-          style: TextStyle(
-            color: AppTheme.textMuted.withOpacity(0.85),
-            fontSize: 9,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 9.5,
             fontWeight: FontWeight.w600,
           ),
         );
@@ -163,28 +167,25 @@ class _RadarPainter extends CustomPainter {
       }
       polyPath.close();
 
+      // Soft warm yellow fill
       final fillPaint = Paint()
-        ..shader = const RadialGradient(
-          colors: [
-            Color(0x6606B6D4),
-            Color(0x226366F1),
-          ],
-        ).createShader(Rect.fromCircle(center: center, radius: radius))
+        ..color = const Color(0x40F7D45B)
         ..style = PaintingStyle.fill;
 
       canvas.drawPath(polyPath, fillPaint);
 
+      // Charcoal / amber border
       final borderPaint = Paint()
-        ..color = AppTheme.accentCyan
+        ..color = AppTheme.charcoal
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;
 
       canvas.drawPath(polyPath, borderPaint);
 
       // 4. Draw Vertex Dots
-      final dotPaint = Paint()..color = AppTheme.accentPurple;
+      final dotPaint = Paint()..color = AppTheme.accent;
       final dotBorderPaint = Paint()
-        ..color = Colors.white
+        ..color = AppTheme.charcoal
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
 
@@ -196,11 +197,12 @@ class _RadarPainter extends CustomPainter {
   }
 
   String _shortLabel(String name) {
-    if (name.contains('Core')) return 'Core';
+    if (name.contains('Core Systems')) return 'Systems';
+    if (name.contains('Distributed')) return 'Distributed';
+    if (name.contains('Data & ML')) return 'Data/ML';
+    if (name.contains('Cloud')) return 'Cloud';
+    if (name.contains('Product')) return 'Velocity';
     if (name.contains('Framework')) return 'Framework';
-    if (name.contains('System')) return 'Cloud';
-    if (name.contains('Data')) return 'Data';
-    if (name.contains('Practices')) return 'DevOps';
     return name;
   }
 

@@ -83,6 +83,8 @@ class PredictResponse {
     this.nnLayers,
   });
 
+  String? get insight => topInsight;
+
   factory PredictResponse.fromJson(Map<String, dynamic> json) {
     return PredictResponse(
       profileText: json['profile_text'] ?? '',

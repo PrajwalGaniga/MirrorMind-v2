@@ -7,6 +7,10 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/skill_radar_chart.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/voice_copilot_modal.dart';
+import 'academic_edit_dialog.dart';
+import 'ml_pipeline_lab_screen.dart';
+import 'knowledge_vault_screen.dart';
 import 'onboarding_screen.dart';
 import 'settings_screen.dart';
 
@@ -28,20 +32,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentTabIndex = 0;
-  int _activeMLStage = 0;
-  bool _showAll10Roles = false;
   bool _isRefreshing = false;
   PredictResponse? _prediction;
   late StudentProfile _student;
-
-  final List<String> _mlStageNames = [
-    '1. Text Narrative',
-    '2. 384-D Vector',
-    '3. CareerMLP NN',
-    '4. Softmax Top-5',
-    '5. Skill Radar',
-    '6. AI Mentor',
-  ];
 
   @override
   void initState() {
@@ -74,70 +67,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _reEvaluateAI() async {
-    setState(() => _isRefreshing = true);
-    try {
-      final res = await ApiService().predictCareer(
-        email: _student.email,
-        skills: _student.skills,
-        cgpa: _student.cgpa,
-        projectsCount: _student.projects.length,
-        internshipsCount: _student.internships.length,
-      );
-      if (mounted) {
-        setState(() {
-          _prediction = res;
-          _isRefreshing = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('⚡ Career AI predictions updated!'),
-            backgroundColor: AppTheme.accentEmerald,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isRefreshing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.accentRed),
-        );
-      }
-    }
+  void _openVoiceCopilot() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => VoiceCopilotModal(student: _student),
+    );
+  }
+
+  void _openAcademicEditor() {
+    showDialog(
+      context: context,
+      builder: (_) => AcademicEditDialog(
+        student: _student,
+        onSuccess: () {
+          widget.onProfileUpdated();
+          _loadInitialPrediction();
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.shellBase,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgDark.withOpacity(0.95),
-        elevation: 0,
         title: Row(
           children: [
             Container(
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: AppTheme.glowGradient,
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.charcoal,
+                borderRadius: BorderRadius.circular(9),
               ),
               child: const Center(
-                child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 16)),
+                child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.accent, fontSize: 16)),
               ),
             ),
-            const SizedBox(width: 8),
-            const Text('MirrorMind v2', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const SizedBox(width: 10),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('MirrorMind v2', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
+                Text('Autonomous Career Copilot', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+              ],
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppTheme.textMuted),
+            icon: _isRefreshing
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.charcoal))
+                : const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
+            tooltip: 'Re-evaluate AI',
+            onPressed: _isRefreshing ? null : _loadInitialPrediction,
+          ),
+          IconButton(
+            icon: const Icon(Icons.record_voice_over, color: AppTheme.charcoal, size: 21),
+            tooltip: 'Voice Copilot',
+            onPressed: _openVoiceCopilot,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppTheme.textSecondary, size: 20),
+            tooltip: 'Settings',
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.textMuted, size: 20),
+            icon: const Icon(Icons.logout, color: AppTheme.textSecondary, size: 20),
             tooltip: 'Sign Out',
             onPressed: () async {
               await AuthService().logout();
@@ -146,163 +147,147 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Student Header Card
-              _buildStudentHeaderCard(),
-              const SizedBox(height: 16),
-
-              // Content based on bottom tab
-              if (_currentTabIndex == 0) _buildMLVisualizerTab(),
-              if (_currentTabIndex == 1) _buildStudentDossierTab(),
-              if (_currentTabIndex == 2) _buildCloudVerificationTab(),
-            ],
-          ),
-        ),
+      body: IndexedStack(
+        index: _currentTabIndex,
+        children: [
+          _buildMainDashboardView(),
+          MLPipelineLabScreen(student: _student),
+          KnowledgeVaultScreen(student: _student, onProfileUpdated: widget.onProfileUpdated),
+          _buildStudentDossierView(),
+        ],
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.bgCard,
-          border: const Border(top: BorderSide(color: AppTheme.borderColor)),
+        decoration: const BoxDecoration(
+          color: AppTheme.surfaceCard,
+          border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentTabIndex,
           onTap: (i) => setState(() => _currentTabIndex = i),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: AppTheme.accentCyan,
-          unselectedItemColor: AppTheme.textSubtle,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppTheme.charcoal,
+          unselectedItemColor: AppTheme.textMuted,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
           items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.psychology_outlined),
               activeIcon: Icon(Icons.psychology),
-              label: 'Career AI',
+              label: 'ML Lab',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined),
+              activeIcon: Icon(Icons.inventory_2),
+              label: 'Vault',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.badge_outlined),
               activeIcon: Icon(Icons.badge),
               label: 'Dossier',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.cloud_done_outlined),
-              activeIcon: Icon(Icons.cloud_done),
-              label: 'Cloud Sync',
-            ),
           ],
         ),
       ),
     );
   }
 
-  // 1. Student Header Card
-  Widget _buildStudentHeaderCard() {
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
+  // TAB 0: Main Dashboard with Voice Hero, Academics, Career Predictions, Projects & Internships
+  Widget _buildMainDashboardView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. AI Voice Co-Pilot Hero Card
+          _buildVoiceCopilotHero(),
+          const SizedBox(height: 14),
+
+          // 2. Academic Summary Card with Quick Edit
+          _buildAcademicSummaryCard(),
+          const SizedBox(height: 14),
+
+          // 3. Career Recommendations Matrix Card
+          if (_prediction != null) ...[
+            _buildCareerPredictionsCard(_prediction!),
+            const SizedBox(height: 14),
+            _buildRadarAndInsightsCard(_prediction!),
+            const SizedBox(height: 14),
+          ],
+
+          // 4. Projects Section
+          _buildProjectsSection(),
+          const SizedBox(height: 14),
+
+          // 5. Internships & Experience Section
+          _buildInternshipsSection(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // 1. Prominent AI Voice Co-Pilot Hero
+  Widget _buildVoiceCopilotHero() {
+    return GlassCard(
+      backgroundColor: Colors.white,
+      borderColor: AppTheme.borderSubtle,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: AppTheme.accentCyan.withOpacity(0.2),
-                backgroundImage: NetworkImage(
-                  _student.avatarUrl ??
-                      'https://res.cloudinary.com/llinkz0a/image/upload/v1792247568/mirrormind/avatars/avatar_student_prajwal_seed.jpg',
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _student.name,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentIndigo.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: AppTheme.accentIndigo.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            _student.collegeTier,
-                            style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFFC7D2FE)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _student.branch,
-                      style: const TextStyle(fontSize: 11.5, color: AppTheme.accentCyan),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Sem ${_student.semester} • CGPA ${_student.cgpa.toStringAsFixed(1)} • ${_student.email}',
-                      style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted.withOpacity(0.85)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+              const StatusBadge(label: 'AI COPILOT ACTIVE', isConnected: true),
+              Text(
+                'Grounded in Student Data',
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
               ),
             ],
           ),
           const SizedBox(height: 12),
+          const Text(
+            'MirrorMind Voice Copilot',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Real-time spoken engineering advisor strictly mentoring on technical skill mastery, CGPA targets, and placement readiness.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _isRefreshing ? null : _reEvaluateAI,
-                  icon: _isRefreshing
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.bgDark))
-                      : const Text('⚡', style: TextStyle(fontSize: 14)),
-                  label: Text(_isRefreshing ? 'Inference...' : 'Re-run Career AI'),
+                  onPressed: _openVoiceCopilot,
+                  icon: const Icon(Icons.mic, size: 18),
+                  label: const Text('Start Voice Consultation'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    backgroundColor: AppTheme.charcoal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OnboardingScreen(
-                        initialProfile: _student,
-                        userEmail: _student.email,
-                        userName: _student.name,
-                        onSuccess: (updatedStudent, updatedPrediction) {
-                          Navigator.pop(context);
-                          setState(() {
-                            _student = updatedStudent;
-                            _prediction = updatedPrediction;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit, size: 14),
-                label: const Text('Edit Profile', style: TextStyle(fontSize: 12)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFB45309), size: 20),
+                  tooltip: 'Text Query',
+                  onPressed: _openVoiceCopilot,
                 ),
               ),
             ],
@@ -312,212 +297,446 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 2. ML Visualizer Tab (The Core Requested Feature)
-  Widget _buildMLVisualizerTab() {
-    if (_prediction == null) {
-      return GlassCard(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: const [
-            CircularProgressIndicator(color: AppTheme.accentCyan),
-            SizedBox(height: 16),
-            Text('Executing PyTorch CareerMLP Inference...'),
-          ],
-        ),
-      );
-    }
-
-    final pred = _prediction!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Trophy Match Banner
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0x336366F1), Color(0x2606B6D4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.accentCyan.withOpacity(0.35)),
-          ),
-          child: Row(
+  // 2. Compact Academic Credentials & Verification
+  Widget _buildAcademicSummaryCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentAmber.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.accentAmber.withOpacity(0.3)),
-                ),
-                child: const Center(child: Text('🏆', style: TextStyle(fontSize: 22))),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'TOP PREDICTED CAREER PATHWAY',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.accentCyan, letterSpacing: 0.5),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pred.topLabel,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Text(
-                    '${(pred.confidence * 100).toStringAsFixed(1)}%',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.accentEmerald),
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppTheme.charcoal,
+                    backgroundImage: _student.avatarUrl != null ? NetworkImage(_student.avatarUrl!) : null,
+                    child: _student.avatarUrl == null
+                        ? Text(_student.name.isNotEmpty ? _student.name[0] : 'P', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))
+                        : null,
                   ),
-                  const Text('Confidence', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_student.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.textPrimary)),
+                      Text(_student.email, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                    ],
+                  ),
                 ],
+              ),
+              TextButton.icon(
+                onPressed: _openAcademicEditor,
+                icon: const Icon(Icons.edit_outlined, size: 14, color: AppTheme.charcoal),
+                label: const Text('Edit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 30)),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-
-        // Horizontal ML Stage Stepper
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: List.generate(_mlStageNames.length, (i) {
-              final isSel = _activeMLStage == i;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(
-                    _mlStageNames[i],
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                      color: isSel ? AppTheme.bgDark : AppTheme.textMuted,
-                    ),
-                  ),
-                  selected: isSel,
-                  selectedColor: AppTheme.accentCyan,
-                  backgroundColor: AppTheme.bgCard,
-                  onSelected: (_) => setState(() => _activeMLStage = i),
-                ),
-              );
-            }),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceSoft,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _metricTile('CGPA', _student.cgpa.toStringAsFixed(2), AppTheme.accent),
+                _divider(),
+                _metricTile('Semester', '${_student.semester}th', AppTheme.charcoal),
+                _divider(),
+                _metricTile('Projects', '${_student.projects.length}', AppTheme.charcoal),
+                _divider(),
+                _metricTile('Internships', '${_student.internships.length}', AppTheme.charcoal),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 8),
+          Text(
+            _student.collegeName ?? 'Visvesvaraya Technological University (SIT)',
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 
-        // ACTIVE STAGE CARD
-        if (_activeMLStage == 0) _stage01TextNarrative(pred),
-        if (_activeMLStage == 1) _stage02EmbeddingSpace(pred),
-        if (_activeMLStage == 2) _stage03NeuralNetworkFlow(pred),
-        if (_activeMLStage == 3) _stage04SoftmaxTop5(pred),
-        if (_activeMLStage == 4) _stage05SkillRadar(pred),
-        if (_activeMLStage == 5) _stage06AiMentorRoadmap(pred),
+  Widget _divider() {
+    return Container(width: 1, height: 28, color: AppTheme.borderSubtle);
+  }
+
+  Widget _metricTile(String label, String value, Color accentColor) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: accentColor)),
+        const SizedBox(height: 1),
+        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted)),
       ],
     );
   }
 
-  // STAGE 01: Profile Serialization
-  Widget _stage01TextNarrative(PredictResponse pred) {
+  // 3. Career Recommendations Matrix
+  Widget _buildCareerPredictionsCard(PredictResponse pred) {
+    final topRole = pred.predictions.isNotEmpty ? pred.predictions.first : null;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _stageHeader('STAGE 01', 'Deterministic Profile Serialization', 'How student attributes are formatted before embedding'),
-          const SizedBox(height: 14),
-          const Text('Input Narrative to SentenceTransformer:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.accentIndigo.withOpacity(0.25)),
-            ),
-            child: Text(
-              '"${pred.profileText}"',
-              style: const TextStyle(fontSize: 12.5, fontFamily: 'monospace', color: Color(0xFFA5F3FC), height: 1.45),
-            ),
-          ),
-          const SizedBox(height: 10),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.shield_outlined, size: 14, color: AppTheme.accentEmerald),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Deterministic formatting omits target labels to prevent data leakage.',
-                  style: TextStyle(fontSize: 10.5, color: AppTheme.textSubtle.withOpacity(0.9)),
-                ),
+              const Text('Career Affinity Predictions', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              StatusBadge(
+                label: topRole != null ? '${(topRole.confidence * 100).toStringAsFixed(1)}% MATCH' : 'ACTIVE',
+                isConnected: true,
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          const Text('PyTorch CareerMLP Multi-Task Inference:', style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
+          const SizedBox(height: 14),
+
+          // Top Role Banner
+          if (topRole != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accent,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Text('TOP PREDICTION', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: AppTheme.charcoal)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(topRole.label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppTheme.textPrimary)),
+                        ],
+                      ),
+                      Text(
+                        '${(topRole.confidence * 100).toStringAsFixed(1)}%',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFFB45309)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: topRole.confidence,
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFFEF3C7),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accent),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Remaining Ranked Roles
+          ...pred.predictions.skip(1).take(4).map((p) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('#${p.rank}  ${p.label}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      Text('${(p.confidence * 100).toStringAsFixed(1)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.charcoal)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: p.confidence,
+                      minHeight: 5,
+                      backgroundColor: AppTheme.surfaceMuted,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.charcoal),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  // STAGE 02: 384-D Vector Embedding Space
-  Widget _stage02EmbeddingSpace(PredictResponse pred) {
-    final preview = pred.embeddingPreview ?? [-0.078, -0.0017, 0.0278, 0.0474, -0.035, 0.089, -0.012, 0.054];
-
+  // Radar & Insights Card
+  Widget _buildRadarAndInsightsCard(PredictResponse pred) {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _stageHeader('STAGE 02', '384-D Dense Embedding Space', 'all-MiniLM-L6-v2 normalized semantic coordinates'),
+          const Text('5-Pillar Capability Radar', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+          const SizedBox(height: 4),
+          const Text('Multi-dimensional competency breakdown derived from coursework & skills:', style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
           const SizedBox(height: 14),
+          Center(
+            child: SkillRadarChart(scores: pred.skillRadar ?? {'Systems': 85, 'Data/ML': 90, 'Cloud': 78, 'Distributed': 82, 'Velocity': 80}, size: 210),
+          ),
+          if (pred.insight != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.lightbulb_outline, size: 18, color: Color(0xFFD97706)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      pred.insight!,
+                      style: const TextStyle(fontSize: 11.5, color: AppTheme.textPrimary, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 4. Projects Section
+  Widget _buildProjectsSection() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _metricPill('384', 'Dimensions'),
-              _metricPill('1.000', 'L2 Norm (||v||₂)'),
-              _metricPill('MiniLM', 'Transformer'),
+              const Row(
+                children: [
+                  Icon(Icons.folder_special_outlined, size: 18, color: AppTheme.charcoal),
+                  SizedBox(width: 8),
+                  Text('Projects & Technical Artifacts', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                ],
+              ),
+              Text('${_student.projects.length} Total', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text('Sample Embedding Vector Coordinates:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(
-            'Cyan = Positive Semantic Activation | Purple = Negative',
-            style: TextStyle(fontSize: 10.5, color: AppTheme.textSubtle.withOpacity(0.85)),
-          ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: preview.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final val = entry.value;
-              final isPos = val >= 0;
-              final color = isPos ? AppTheme.accentCyan : AppTheme.accentPurple;
-
+          if (_student.projects.isEmpty)
+            const Text('No projects added yet.', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary))
+          else
+            ..._student.projects.map((proj) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: color.withOpacity(0.35)),
+                  color: AppTheme.surfaceSoft,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.borderSubtle),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('d_${idx + 1}', style: const TextStyle(fontSize: 9, color: AppTheme.textSubtle)),
-                    Text(
-                      val.toStringAsFixed(3),
-                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace'),
+                    Text(proj.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text(proj.description, style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary, height: 1.35)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: proj.techStack.map((tech) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.borderSubtle),
+                          ),
+                          child: Text(tech, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.charcoal)),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  // 5. Internships & Experience Section
+  Widget _buildInternshipsSection() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.work_outline, size: 18, color: AppTheme.charcoal),
+                  SizedBox(width: 8),
+                  Text('Internships & Experience', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                ],
+              ),
+              Text('${_student.internships.length} Total', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (_student.internships.isEmpty)
+            const Text('No internship experience recorded yet.', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary))
+          else
+            ..._student.internships.map((intern) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceSoft,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(intern.role, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimary)),
+                        if (intern.isCurrent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('CURRENT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppTheme.accentEmerald)),
+                          ),
+                      ],
+                    ),
+                    Text(intern.companyName, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
+                    if (intern.description != null && intern.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(intern.description!, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, height: 1.35)),
+                    ],
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  // TAB 3: Student Career Dossier View
+  Widget _buildStudentDossierView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildAcademicGroundingCard(),
+          const SizedBox(height: 14),
+          _buildTechnicalSkillsCard(),
+          const SizedBox(height: 14),
+          _buildResumeStatusCard(),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OnboardingScreen(
+                    userEmail: _student.email,
+                    userName: _student.name,
+                    userPhoto: _student.avatarUrl,
+                    onSuccess: (p, pred) => widget.onProfileUpdated(),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text('Edit Complete Career Dossier'),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAcademicGroundingCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Academic Groundings', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: _openAcademicEditor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _dossierRow('University / College', _student.collegeName ?? 'Visvesvaraya Technological University (SIT)'),
+          _dossierRow('Engineering Branch', _student.branch),
+          _dossierRow('CGPA', '${_student.cgpa} / 10.0'),
+          _dossierRow('Current Semester', '${_student.semester}th Semester'),
+          _dossierRow('Institutional Tier', _student.collegeTier),
+          _dossierRow('Career Interest Track', _student.careerInterest),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTechnicalSkillsCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Technical Skills Inventory', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+          const SizedBox(height: 4),
+          const Text('Extracted from coursework, GitHub, and verified projects:', style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _student.skills.map((skill) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceSoft,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppTheme.borderSubtle),
+                ),
+                child: Text(skill, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               );
             }).toList(),
           ),
@@ -526,465 +745,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // STAGE 03: PyTorch CareerMLP Neural Network Flow
-  Widget _stage03NeuralNetworkFlow(PredictResponse pred) {
-    final layers = pred.nnLayers ?? [
-      NNLayerSpec(id: '0', name: 'Dense Embedding Input', type: 'Tensor', inputShape: [1, 384], outputShape: [1, 384], activation: 'L2 Normalized', description: 'Dense 384-D vector'),
-      NNLayerSpec(id: '1', name: 'Dense Block 1', type: 'Linear + BatchNorm + GELU + Dropout', inputShape: [1, 384], outputShape: [1, 512], activation: 'GELU', regularization: 'Dropout(0.35)', description: 'Expands into higher-dimensional latent space'),
-      NNLayerSpec(id: '2', name: 'Dense Block 2', type: 'Linear + BatchNorm + GELU + Dropout', inputShape: [1, 512], outputShape: [1, 256], activation: 'GELU', regularization: 'Dropout(0.35)', description: 'Feature compression'),
-      NNLayerSpec(id: '3', name: 'Dense Block 3', type: 'Linear + BatchNorm + GELU + Dropout', inputShape: [1, 256], outputShape: [1, 128], activation: 'GELU', regularization: 'Dropout(0.245)', description: 'Classification bottleneck'),
-      NNLayerSpec(id: '4', name: 'Output Classifier', type: 'Linear + Softmax', inputShape: [1, 128], outputShape: [1, 10], activation: 'Softmax', description: 'Outputs probabilities across all 10 roles'),
-    ];
-
+  Widget _buildResumeStatusCard() {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _stageHeader('STAGE 03', 'PyTorch CareerMLP Forward Pass', 'Deep MLP with BatchNorm, GELU, and Dropout'),
-          const SizedBox(height: 14),
-          ...layers.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final l = entry.value;
-            final isLast = idx == layers.length - 1;
-
-            return Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.accentIndigo.withOpacity(0.25)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentCyan.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text('L$idx', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.accentCyan)),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                            const SizedBox(height: 2),
-                            Text(
-                              '[${l.inputShape.join(', ')}] → [${l.outputShape.join(', ')}] • ${l.activation}',
-                              style: const TextStyle(fontSize: 11, color: AppTheme.accentPurple, fontFamily: 'monospace'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!isLast)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Icon(Icons.arrow_downward, size: 14, color: AppTheme.accentIndigo.withOpacity(0.7)),
-                  ),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  // STAGE 04: Softmax Classification & Top-5 Roles
-  Widget _stage04SoftmaxTop5(PredictResponse pred) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _stageHeader('STAGE 04', 'Softmax Probability Distribution', 'Top 5 ranked career pathways with confidence percentages'),
-          const SizedBox(height: 14),
-          ...pred.predictions.map((p) {
-            final isTop = p.rank == 1;
-            final pct = (p.confidence * 100).toStringAsFixed(1);
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isTop ? AppTheme.accentCyan.withOpacity(0.08) : Colors.white.withOpacity(0.03),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: isTop ? AppTheme.accentCyan.withOpacity(0.4) : AppTheme.borderColor),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isTop ? AppTheme.accentAmber.withOpacity(0.2) : Colors.white.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '#${p.rank}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: isTop ? AppTheme.accentAmber : AppTheme.textMuted,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(p.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                        ],
-                      ),
-                      Text(
-                        '$pct%',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: isTop ? AppTheme.accentCyan : AppTheme.textMain,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: p.confidence,
-                      minHeight: 6,
-                      backgroundColor: Colors.white.withOpacity(0.06),
-                      valueColor: AlwaysStoppedAnimation<Color>(isTop ? AppTheme.accentCyan : AppTheme.accentIndigo),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 6),
-          Center(
-            child: TextButton(
-              onPressed: () => setState(() => _showAll10Roles = !_showAll10Roles),
-              child: Text(
-                _showAll10Roles ? '▲ Collapse 10-Role Distribution' : '▼ Inspect All 10 Role Probabilities',
-                style: const TextStyle(fontSize: 12, color: AppTheme.accentCyan),
-              ),
-            ),
-          ),
-          if (_showAll10Roles && pred.allProbabilities != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: pred.allProbabilities!.entries.map((entry) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(entry.key, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-                        Text(
-                          '${(entry.value * 100).toStringAsFixed(2)}%',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.accentCyan),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // STAGE 05: 5-Pillar Skill Radar
-  Widget _stage05SkillRadar(PredictResponse pred) {
-    final scores = pred.skillRadar ?? {
-      'Core Programming': 85,
-      'Framework Mastery': 82,
-      'System & Cloud': 74,
-      'Data & Mathematics': 78,
-      'Engineering Practices': 75,
-    };
-
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _stageHeader('STAGE 05', '5-Pillar Skill Radar', 'Multi-dimensional proficiency evaluation'),
-          const SizedBox(height: 16),
-          Center(
-            child: SkillRadarChart(scores: scores, size: 240),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // STAGE 06: Gemini AI Mentor Strategic Roadmap
-  Widget _stage06AiMentorRoadmap(PredictResponse pred) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _stageHeader('STAGE 06', 'Gemini 3.8 Flash Career Mentor', 'Personalized strategic evaluation and placement roadmap'),
-          const SizedBox(height: 14),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentPurple.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(child: Text('🤖', style: TextStyle(fontSize: 20))),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('AI Placement Mentor', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text('Model: Gemini 3.8 Flash', style: TextStyle(fontSize: 11, color: AppTheme.textSubtle.withOpacity(0.9))),
-                ],
-              ),
+              const Text('Verified Resume Asset', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              const StatusBadge(label: 'PARSED & INDEXED', isConnected: true),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.accentPurple.withOpacity(0.25)),
-            ),
-            child: Text(
-              pred.topInsight ?? 'Your technical foundation shows strong alignment with industry benchmarks.',
-              style: const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFFE2E8F0)),
-            ),
+          const SizedBox(height: 8),
+          Text(
+            _student.resumeFilename ?? 'prajwal_resume (1).pdf',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: AppTheme.textPrimary),
           ),
+          const SizedBox(height: 2),
+          const Text('Uploaded to Cloudinary CDN & embedded into MongoDB Vector Search vault.', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
         ],
       ),
     );
   }
 
-  // 3. Student Dossier Tab
-  Widget _buildStudentDossierTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Academic Scorecard
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Academic Scorecard', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _metricPill(_student.cgpa.toStringAsFixed(1), 'CGPA'),
-                  _metricPill('Sem ${_student.semester}', 'Semester'),
-                  _metricPill('${_student.backlogCount}', 'Backlogs'),
-                  _metricPill(_student.collegeTier, 'Tier'),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Skills Cloud
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Verified Technical Skills (${_student.skills.length})', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: _student.skills.map((s) {
-                  return Chip(
-                    label: Text(s, style: const TextStyle(fontSize: 11.5, color: Color(0xFFC7D2FE))),
-                    backgroundColor: AppTheme.accentIndigo.withOpacity(0.15),
-                    side: BorderSide(color: AppTheme.accentIndigo.withOpacity(0.3)),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Projects
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Projects Portfolio (${_student.projects.length})', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 12),
-              ..._student.projects.map((p) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withOpacity(0.06)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                      if (p.description.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(p.description, style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted.withOpacity(0.85))),
-                      ],
-                      if (p.techStack.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 4,
-                          children: p.techStack.map((t) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(t, style: const TextStyle(fontSize: 9.5, color: AppTheme.textSubtle)),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Internships
-        GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Work Experience (${_student.internships.length})', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 12),
-              ..._student.internships.map((i) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withOpacity(0.06)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(i.companyName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                      Text(
-                        '${i.role} ${i.domain != null ? '• ${i.domain}' : ''}',
-                        style: const TextStyle(fontSize: 11.5, color: AppTheme.accentCyan),
-                      ),
-                      if (i.description != null) ...[
-                        const SizedBox(height: 4),
-                        Text(i.description!, style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted.withOpacity(0.85))),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 4. Cloud Verification Tab
-  Widget _buildCloudVerificationTab() {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _dossierRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Cloud Infrastructure & Storage', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-          const SizedBox(height: 12),
-          const StatusBadge(label: 'MongoDB: mirrormind_db.students', isConnected: true),
-          const SizedBox(height: 8),
-          const StatusBadge(label: 'FastAPI ML Inference Service', isConnected: true),
-          const SizedBox(height: 8),
-          const StatusBadge(label: 'PyTorch CareerMLP & SentenceTransformers', isConnected: true),
-          const SizedBox(height: 16),
-          const Text('Active Cloudinary Avatar:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          SelectableText(
-            _student.avatarUrl ?? 'None',
-            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppTheme.accentCyan),
-          ),
-          if (_student.resumeUrl != null) ...[
-            const SizedBox(height: 12),
-            const Text('Active Cloudinary Resume:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            SelectableText(
-              _student.resumeUrl!,
-              style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppTheme.accentEmerald),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _stageHeader(String stageNum, String title, String subtitle) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-            gradient: AppTheme.glowGradient,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            stageNum,
-            style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Colors.white, fontFamily: 'monospace'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              Text(subtitle, style: TextStyle(fontSize: 10.5, color: AppTheme.textSubtle.withOpacity(0.9))),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _metricPill(String val, String label) {
-    return Column(
-      children: [
-        Text(val, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.accentCyan)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-      ],
     );
   }
 }

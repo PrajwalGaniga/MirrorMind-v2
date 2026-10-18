@@ -14,7 +14,7 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -31,7 +31,7 @@ class MirrorMindApp extends StatelessWidget {
     return MaterialApp(
       title: 'MirrorMind v2',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: const AppRootController(),
     );
   }
@@ -101,36 +101,40 @@ class _AppRootControllerState extends State<AppRootController> {
   Widget build(BuildContext context) {
     if (_auth.isLoading || _checkingProfile) {
       return Scaffold(
+        backgroundColor: AppTheme.shellBase,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 58,
+                height: 58,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.glowGradient,
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppTheme.charcoal,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x121E2023), blurRadius: 18, offset: Offset(0, 6)),
+                  ],
                 ),
                 child: const Center(
-                  child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 26)),
+                  child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.accent, fontSize: 28)),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppTheme.accentCyan),
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppTheme.charcoal),
               ),
               const SizedBox(height: 14),
               const Text(
                 'MirrorMind v2',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textPrimary),
               ),
               const SizedBox(height: 4),
-              Text(
-                'Connecting to Neural Engine...',
-                style: TextStyle(color: AppTheme.textMuted.withOpacity(0.85), fontSize: 12),
+              const Text(
+                'Connecting to Grounded Neural Engine...',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
             ],
           ),

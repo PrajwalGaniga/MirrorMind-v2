@@ -96,12 +96,11 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.shellBase,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: AppTheme.textMuted),
+            icon: const Icon(Icons.settings_outlined, color: AppTheme.textSecondary),
             tooltip: 'Server Settings',
             onPressed: () {
               Navigator.push(
@@ -124,14 +123,10 @@ class _AuthScreenState extends State<AuthScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    gradient: AppTheme.glowGradient,
+                    color: AppTheme.charcoal,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x666366F1),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
+                      BoxShadow(color: Color(0x151E2023), blurRadius: 18, offset: Offset(0, 6)),
                     ],
                   ),
                   child: const Center(
@@ -140,7 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: AppTheme.accent,
                       ),
                     ),
                   ),
@@ -148,29 +143,27 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 16),
                 const Text(
                   'MirrorMind v2',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Neural Career Intelligence & Skill Radar',
-                  style: TextStyle(fontSize: 12.5, color: AppTheme.textMuted.withOpacity(0.9)),
+                const Text(
+                  'Autonomous Career Copilot & Live ML Pipeline',
+                  style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 26),
 
                 // Main Auth Card
                 GlassCard(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Google 1-Click Button
-                      ElevatedButton(
+                      OutlinedButton(
                         onPressed: _loading ? null : _handleGoogleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.08),
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: AppTheme.borderColor),
+                        style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: AppTheme.borderSubtle),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -179,60 +172,60 @@ class _AuthScreenState extends State<AuthScreen> {
                               'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                               width: 18,
                               height: 18,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.account_circle, size: 18),
+                              errorBuilder: (ctx, err, st) => const Icon(Icons.account_circle, size: 18, color: AppTheme.charcoal),
                             ),
                             const SizedBox(width: 10),
                             const Text(
                               'Continue with Google',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimary),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
                       // Seed Student Instant Test Button
-                      OutlinedButton.icon(
+                      ElevatedButton.icon(
                         onPressed: _loading ? null : _handleSeedLogin,
-                        icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+                        icon: const Icon(Icons.bolt, color: AppTheme.charcoal, size: 18),
                         label: const Text(
-                          'Test Demo: Seeded Student (Luffy)',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentCyan),
+                          'Test Demo: Seed Student (Prajwal)',
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.charcoal),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.accentCyan.withOpacity(0.4)),
-                          backgroundColor: AppTheme.accentCyan.withOpacity(0.06),
-                          padding: const EdgeInsets.symmetric(vertical: 11),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accent,
+                          foregroundColor: AppTheme.charcoal,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
 
-                      const SizedBox(height: 20),
-                      Row(
+                      const SizedBox(height: 18),
+                      const Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
+                          Expanded(child: Divider(color: AppTheme.borderSubtle)),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
-                              'or use email',
-                              style: TextStyle(fontSize: 11, color: AppTheme.textSubtle.withOpacity(0.9)),
+                              'or use email credentials',
+                              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                             ),
                           ),
-                          Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
+                          Expanded(child: Divider(color: AppTheme.borderSubtle)),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
 
                       if (_error != null) ...[
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentRed.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.accentRed.withOpacity(0.3)),
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFECACA)),
                           ),
                           child: Text(
                             _error!,
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -243,7 +236,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           controller: _nameController,
                           decoration: const InputDecoration(
                             labelText: 'Full Name',
-                            prefixIcon: Icon(Icons.person, size: 18, color: AppTheme.textSubtle),
+                            prefixIcon: Icon(Icons.person_outline, size: 18),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -254,7 +247,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.email, size: 18, color: AppTheme.textSubtle),
+                          prefixIcon: Icon(Icons.email_outlined, size: 18),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -264,24 +257,24 @@ class _AuthScreenState extends State<AuthScreen> {
                         obscureText: true,
                         decoration: const InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock, size: 18, color: AppTheme.textSubtle),
+                          prefixIcon: Icon(Icons.lock_outline, size: 18),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
 
                       // Submit Button
                       ElevatedButton(
                         onPressed: _loading ? null : _handleEmailAuth,
                         child: _loading
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.bgDark),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : Text(_isSignUp ? 'Create Free Account' : 'Sign In'),
+                          : Text(_isSignUp ? 'Create Student Account' : 'Sign In to MirrorMind'),
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       TextButton(
                         onPressed: () {
                           setState(() {
@@ -293,7 +286,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           _isSignUp
                               ? 'Already have an account? Sign In'
                               : "Don't have an account? Sign Up",
-                          style: const TextStyle(fontSize: 12, color: AppTheme.accentCyan),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.charcoal),
                         ),
                       ),
                     ],

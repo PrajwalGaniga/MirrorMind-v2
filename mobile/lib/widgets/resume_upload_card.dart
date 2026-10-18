@@ -85,66 +85,73 @@ class _ResumeUploadCardState extends State<ResumeUploadCard> {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: AppTheme.accentIndigo.withOpacity(0.35),
-      padding: const EdgeInsets.all(20),
+      borderColor: AppTheme.borderSubtle,
+      padding: const EdgeInsets.all(18),
       onTap: _isUploading ? null : _pickAndUploadResume,
       child: Column(
         children: [
           if (_isUploading) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             const SizedBox(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentCyan),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.charcoal),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             const Text(
-              'AI Resume Extraction in Progress',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              'AI Resume Ingestion & Parsing...',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimary),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               _uploadStep,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppTheme.accentCyan),
+              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
           ] else ...[
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: AppTheme.accentIndigo.withOpacity(0.15),
+                    color: AppTheme.surfaceSoft,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.accentIndigo.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.borderSubtle),
                   ),
                   child: const Center(
-                    child: Text('📄', style: TextStyle(fontSize: 22)),
+                    child: Icon(Icons.description_outlined, color: AppTheme.charcoal, size: 22),
                   ),
                 ),
                 const SizedBox(width: 14),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Fast-Track: Upload Resume',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
-                      const SizedBox(height: 2),
                       Text(
-                        'Tap to upload PDF/DOCX • Auto-fills form',
-                        style: TextStyle(color: AppTheme.textMuted.withOpacity(0.9), fontSize: 12),
+                        'Upload Resume Document',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimary),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'PDF / DOCX • Extracts skills & projects into vault',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11.5),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.upload_file, color: AppTheme.accentCyan, size: 22),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.charcoal,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.file_upload_outlined, color: Colors.white, size: 18),
+                ),
               ],
             ),
           ],
@@ -153,9 +160,9 @@ class _ResumeUploadCardState extends State<ResumeUploadCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.accentEmerald.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.accentEmerald.withOpacity(0.3)),
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Row(
                 children: [
@@ -163,8 +170,8 @@ class _ResumeUploadCardState extends State<ResumeUploadCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Successfully extracted from $_successFilename!',
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF6EE7B7)),
+                      'Successfully ingested & indexed $_successFilename!',
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF065F46), fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -176,9 +183,9 @@ class _ResumeUploadCardState extends State<ResumeUploadCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppTheme.accentRed.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.accentRed.withOpacity(0.3)),
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
               ),
               child: Row(
                 children: [
@@ -187,7 +194,7 @@ class _ResumeUploadCardState extends State<ResumeUploadCard> {
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFFFCA5A5)),
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF991B1B)),
                     ),
                   ),
                 ],
