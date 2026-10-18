@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { Navbar } from "@/components/Navbar";
 
 // Interface for Transcript Messages
 interface Message {
@@ -456,51 +457,93 @@ export default function VoiceChatPage() {
   }, [connectWebSocket]);
 
   return (
-    <div className="voice-page-wrapper">
-      <div className="voice-chat-container">
-        {/* Navigation & Header */}
-        <header className="voice-header">
-          <div className="brand">
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-              <div className="brand-icon">M</div>
-              <div className="brand-text">
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <h1 style={{ fontSize: "1.25rem", margin: 0, color: "var(--text-main)" }}>MirrorMind Voice AI</h1>
-                  <span className="version-pill" style={{ background: "rgba(6, 182, 212, 0.2)", color: "#06b6d4" }}>
-                    Gemini Live WS
-                  </span>
-                </div>
-                <p style={{ fontSize: "0.78rem", margin: 0, color: "var(--text-muted)" }}>
-                  Zero-Latency Natural Voice Dialogue &amp; Career Mentorship
-                </p>
-              </div>
-            </Link>
+    <div className="editorial-page-container">
+      <Navbar
+        studentName={user?.displayName || "Student"}
+        studentEmail={user?.email || "prajwal.seed@mirrormind.ai"}
+        backendOnline={wsStatus === "connected"}
+      />
+
+      <div style={{ marginTop: "24px" }}>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+            marginBottom: "24px",
+            paddingBottom: "16px",
+            borderBottom: "1px solid rgba(41, 42, 41, 0.08)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "4px 12px",
+                borderRadius: "999px",
+                background: "rgba(247, 212, 91, 0.35)",
+                fontSize: "0.74rem",
+                fontWeight: 700,
+                color: "var(--charcoal)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginBottom: "8px",
+              }}
+            >
+              <span>🎙️</span> Gemini Live Audio Channel
+            </div>
+            <h1
+              style={{
+                fontSize: "1.75rem",
+                fontWeight: 700,
+                color: "var(--charcoal)",
+                margin: "0 0 6px 0",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Full-Screen AI Voice Cockpit
+            </h1>
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--charcoal-muted)",
+                margin: 0,
+                maxWidth: "680px",
+                lineHeight: 1.5,
+              }}
+            >
+              Engage in low-latency voice dialogue. The agent executes real-time database mutations for skills, projects, and work experiences with verified function calling.
+            </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {/* WebSocket Status Indicator */}
             <div
-              className={`status-badge ${wsStatus === "connected" ? "connected" : wsStatus === "connecting" ? "connecting" : "error"}`}
-            >
-              <span className="pulse-dot"></span>
-              <span>{wsStatus === "connected" ? "WebSocket: Live" : wsStatus === "connecting" ? "Connecting WS..." : "WS: Offline"}</span>
-            </div>
-
-            {/* Back to Dashboard Link */}
-            <Link
-              href="/"
-              className="secondary-button"
               style={{
-                textDecoration: "none",
-                padding: "8px 16px",
-                fontSize: "0.82rem",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "8px",
+                padding: "8px 16px",
+                borderRadius: "999px",
+                background: wsStatus === "connected" ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                color: wsStatus === "connected" ? "#059669" : "#d97706",
+                fontSize: "0.82rem",
+                fontWeight: 600,
               }}
             >
-              📊 Back to Dashboard
-            </Link>
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: wsStatus === "connected" ? "#10B981" : "#F59E0B",
+                }}
+              />
+              <span>{wsStatus === "connected" ? "WebSocket: Live" : wsStatus === "connecting" ? "Connecting WS..." : "WS: Offline"}</span>
+            </div>
           </div>
         </header>
 

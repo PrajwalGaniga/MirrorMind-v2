@@ -3,34 +3,41 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { User } from "firebase/auth";
 
 import { MongoUser } from "@/context/AuthContext";
 import { StudentProfile } from "@/types/student";
 
-interface NavbarProps {
-  authUser: User | null;
-  mongoUser: MongoUser | null;
-  studentProfile: StudentProfile | null;
-  currentView: "auth" | "onboarding" | "dashboard";
-  onNavigate: (view: "onboarding" | "dashboard") => void;
-  onLogout: () => void;
-  dbConnected: boolean;
-  backendOnline: boolean;
-  mlLoaded: boolean;
+export interface NavbarProps {
+  authUser?: User | null;
+  mongoUser?: MongoUser | null;
+  studentProfile?: StudentProfile | null;
+  studentName?: string;
+  studentEmail?: string;
+  currentView?: "auth" | "onboarding" | "dashboard";
+  onNavigate?: (view: "onboarding" | "dashboard") => void;
+  onLogout?: () => void;
+  dbConnected?: boolean;
+  backendOnline?: boolean;
+  mlLoaded?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  authUser,
-  mongoUser,
-  studentProfile,
-  currentView,
+  authUser = null,
+  mongoUser = null,
+  studentProfile = null,
+  studentName,
+  studentEmail,
+  currentView = "dashboard",
   onNavigate,
   onLogout,
-  dbConnected,
-  backendOnline,
-  mlLoaded,
+  dbConnected = true,
+  backendOnline = true,
+  mlLoaded = true,
 }) => {
+  const pathname = usePathname();
+
   // Determine avatar to show: studentProfile avatar, authUser photo, or fallback
   const avatarUrl =
     studentProfile?.avatar_url ||
@@ -38,101 +45,92 @@ export const Navbar: React.FC<NavbarProps> = ({
     mongoUser?.photo_url;
 
   const displayName =
+    studentName ||
     studentProfile?.name ||
     authUser?.displayName ||
     mongoUser?.name ||
     "Student";
 
+  const navItems = [
+    { label: "Dashboard", href: "/", icon: "📊" },
+    { label: "Career Dossier", href: "/profile", icon: "📋" },
+    { label: "Knowledge Vault", href: "/knowledge-vault", icon: "📚" },
+    { label: "ML Visualizer", href: "/ml-visualizer", icon: "🧠" },
+    { label: "Public Portfolio", href: "/portfolio", icon: "✨" },
+    { label: "Voice Studio", href: "/voice-chat", icon: "🎙️" },
+  ];
+
   return (
-    <header className="navbar-header">
+    <header className="navbar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "20px", borderBottom: "1px solid var(--border-subtle)", gap: "16px", flexWrap: "wrap" }}>
       {/* Brand Identity */}
-      <div className="brand" onClick={() => onNavigate("dashboard")} style={{ cursor: "pointer" }}>
-        <div className="brand-icon">M</div>
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
+        <div className="brand-icon" style={{ width: "38px", height: "38px", borderRadius: "10px", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)", fontWeight: 800, fontSize: "1.1rem", border: "1px solid rgba(0,0,0,0.1)" }}>
+          M
+        </div>
         <div className="brand-text">
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <h1 style={{ fontSize: "1.25rem", margin: 0 }}>MirrorMind v2</h1>
-            <span className="version-pill">AI Engine 2.0</span>
+            <h1 style={{ fontSize: "1.15rem", margin: 0, fontWeight: 700, color: "var(--text-primary)" }}>MirrorMind v2</h1>
+            <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "12px", background: "var(--accent)", color: "var(--charcoal)" }}>
+              AI 2.0
+            </span>
           </div>
-          <p style={{ fontSize: "0.78rem", margin: 0, color: "var(--text-muted)" }}>
-            Deep Career Intelligence &amp; Neural Skill Radar
+          <p style={{ fontSize: "0.76rem", margin: 0, color: "var(--text-secondary)" }}>
+            Autonomous Career Intelligence &amp; Neural Radar
           </p>
         </div>
-      </div>
+      </Link>
 
-      {/* Status Badges & User Area */}
+      {/* Editorial Pill Navigation */}
+      <nav className="editorial-nav-pills" style={{ display: "inline-flex", background: "var(--surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-pill)", padding: "4px", gap: "2px", boxShadow: "0 2px 6px rgba(0,0,0,0.02)" }}>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 14px",
+                borderRadius: "var(--radius-pill)",
+                fontSize: "0.82rem",
+                fontWeight: isActive ? 600 : 500,
+                textDecoration: "none",
+                color: isActive ? "#FFFFFF" : "var(--text-secondary)",
+                background: isActive ? "var(--charcoal)" : "transparent",
+                transition: "all 0.18s ease",
+                boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.18)" : "none",
+              }}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* System Status Badges & User Area */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
         {/* MongoDB Status */}
         <div
           className={`status-badge ${dbConnected ? "connected" : "connecting"}`}
           title="MongoDB Atlas Connection Status"
+          style={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem" }}
         >
-          <span className="pulse-dot"></span>
-          <span>{dbConnected ? "MongoDB: Atlas" : "MongoDB: Syncing"}</span>
-        </div>
-
-        {/* FastAPI Status */}
-        <div
-          className={`status-badge ${backendOnline ? "connected" : "error"}`}
-          title="FastAPI Backend Status"
-        >
-          <span className="pulse-dot"></span>
-          <span>{backendOnline ? "FastAPI: 8000" : "FastAPI: Offline"}</span>
+          <span className="pulse-dot" style={{ background: dbConnected ? "#10b981" : "#f59e0b", width: "6px", height: "6px" }}></span>
+          <span>{dbConnected ? "Atlas" : "Syncing"}</span>
         </div>
 
         {/* PyTorch ML Status */}
         <div
           className={`status-badge ${mlLoaded ? "connected" : "connecting"}`}
-          title="PyTorch CareerMLP & SentenceTransformer Status"
+          title="PyTorch CareerMLP Status"
+          style={{ background: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "4px 10px", borderRadius: "999px", fontSize: "0.76rem" }}
         >
-          <span className="pulse-dot"></span>
-          <span>{mlLoaded ? "PyTorch: CareerMLP" : "ML: Loading"}</span>
+          <span className="pulse-dot" style={{ background: mlLoaded ? "#6366f1" : "#f59e0b", width: "6px", height: "6px" }}></span>
+          <span>{mlLoaded ? "PyTorch" : "ML"}</span>
         </div>
-
-        {/* Voice AI Mentor Navigation Link */}
-        <Link
-          href="/voice-chat"
-          className="secondary-button"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            textDecoration: "none",
-            padding: "6px 14px",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            background: "linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.25))",
-            borderColor: "rgba(6, 182, 212, 0.4)",
-            color: "#38bdf8",
-            borderRadius: "20px",
-          }}
-          title="Open Real-Time Voice AI Companion"
-        >
-          <span>🎙️</span>
-          <span>Voice AI</span>
-        </Link>
-
-        {/* Grounded Knowledge Vault Link */}
-        <Link
-          href="/knowledge-vault"
-          className="secondary-button"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            textDecoration: "none",
-            padding: "6px 14px",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(6, 182, 212, 0.25))",
-            borderColor: "rgba(168, 85, 247, 0.4)",
-            color: "#c084fc",
-            borderRadius: "20px",
-          }}
-          title="Open Grounded Knowledge Vault & Vector Intelligence"
-        >
-          <span>📚</span>
-          <span>Knowledge Vault</span>
-        </Link>
 
 
 
@@ -159,21 +157,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="user-email">{authUser.email}</span>
             </div>
 
-            {/* View Switcher Button */}
+            {/* Profile Link */}
             {studentProfile && (
-              <button
-                onClick={() =>
-                  onNavigate(currentView === "dashboard" ? "onboarding" : "dashboard")
-                }
+              <Link
+                href="/profile"
                 className="secondary-button"
                 style={{
                   padding: "5px 12px",
                   fontSize: "0.78rem",
                   marginLeft: "4px",
+                  textDecoration: "none",
+                  borderRadius: "var(--radius-pill)",
                 }}
               >
-                {currentView === "dashboard" ? "✏️ Edit Profile" : "📊 Dashboard"}
-              </button>
+                ✏️ Profile Dossier
+              </Link>
             )}
 
             {/* Logout Button */}

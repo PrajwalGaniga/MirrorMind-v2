@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { Navbar } from "@/components/Navbar";
 import { KnowledgeVault } from "@/components/KnowledgeVault";
 import { StudentProfile } from "@/types/student";
 
@@ -83,83 +83,112 @@ export default function KnowledgeVaultPage() {
   }, [loadStudentProfile]);
 
   return (
-    <div className="voice-page-wrapper">
-      <div className="container" style={{ maxWidth: "1150px", padding: "32px 24px 80px" }}>
-        {/* Navigation Header */}
-        <header className="header" style={{ marginBottom: "28px" }}>
-          <div className="brand">
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-              <div className="brand-icon" style={{ background: "linear-gradient(135deg, #a855f7 0%, #06b6d4 100%)" }}>
-                📚
-              </div>
-              <div className="brand-text">
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <h1 style={{ fontSize: "1.25rem", margin: 0, color: "var(--text-main)" }}>MirrorMind Knowledge Vault</h1>
-                  <span className="version-pill" style={{ background: "rgba(168, 85, 247, 0.2)", color: "#c084fc" }}>
-                    RAG Engine
-                  </span>
-                </div>
-                <p style={{ fontSize: "0.78rem", margin: 0, color: "var(--text-muted)" }}>
-                  Verified Document Intelligence &amp; Multi-Tenant Atlas Vector Search
-                </p>
-              </div>
-            </Link>
+    <div className="editorial-page-container">
+      <Navbar
+        studentName={student?.name || authUser?.displayName || "Student"}
+        studentEmail={activeEmail}
+        backendOnline={dbStatus === "connected"}
+      />
+
+      <div style={{ marginTop: "24px" }}>
+        {/* Editorial Subheader */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+            marginBottom: "28px",
+            paddingBottom: "18px",
+            borderBottom: "1px solid rgba(41, 42, 41, 0.08)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "4px 12px",
+                borderRadius: "999px",
+                background: "rgba(247, 212, 91, 0.35)",
+                fontSize: "0.74rem",
+                fontWeight: 700,
+                color: "var(--charcoal)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginBottom: "8px",
+              }}
+            >
+              <span>📚</span> Grounded Multi-Tenant RAG
+            </div>
+            <h1
+              style={{
+                fontSize: "1.75rem",
+                fontWeight: 700,
+                color: "var(--charcoal)",
+                margin: "0 0 6px 0",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Knowledge Vault &amp; Vector Explorer
+            </h1>
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--charcoal-muted)",
+                margin: 0,
+                maxWidth: "680px",
+                lineHeight: 1.5,
+              }}
+            >
+              Ingest verified academic transcripts, project reports, and certificates. Extracted OCR chunks are vectorized into MongoDB Atlas for hallucination-free retrieval by your AI Copilot.
+            </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            {/* Atlas Vector Status Indicator */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div
-              className={`status-badge ${dbStatus === "connected" ? "connected" : "connecting"}`}
-              title="MongoDB Atlas Vector Search Status"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                borderRadius: "999px",
+                background: dbStatus === "connected" ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                color: dbStatus === "connected" ? "#059669" : "#d97706",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+              }}
             >
-              <span className="pulse-dot"></span>
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: dbStatus === "connected" ? "#10B981" : "#F59E0B",
+                }}
+              />
               <span>{dbStatus === "connected" ? "Atlas Vector Search: Live" : "Vector DB: Syncing"}</span>
             </div>
-
-            {/* Voice AI Link */}
-            <Link
-              href="/voice-chat"
-              className="secondary-button"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                textDecoration: "none",
-                padding: "6px 14px",
-                fontSize: "0.82rem",
-                borderRadius: "20px",
-                color: "#38bdf8",
-              }}
-            >
-              <span>🎙️</span>
-              <span>Voice AI</span>
-            </Link>
-
-            {/* Return to Dashboard */}
-            <Link
-              href="/"
-              className="primary-button"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                textDecoration: "none",
-                padding: "6px 16px",
-                fontSize: "0.82rem",
-                borderRadius: "20px",
-              }}
-            >
-              <span>📊</span>
-              <span>Dashboard</span>
-            </Link>
           </div>
-        </header>
+        </div>
 
         {/* Content Body */}
         {loading ? (
-          <div style={{ padding: "80px", textAlign: "center", color: "var(--text-muted)" }}>
+          <div
+            style={{
+              padding: "80px 20px",
+              textAlign: "center",
+              color: "var(--charcoal-muted)",
+              background: "#FFFFFF",
+              borderRadius: "var(--radius-card)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+            }}
+          >
             <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⚡</div>
-            Loading Knowledge Vault &amp; Vector Index...
+            <div style={{ fontWeight: 600, color: "var(--charcoal)" }}>Loading Knowledge Vault &amp; Vector Index...</div>
+            <div style={{ fontSize: "0.82rem", marginTop: "4px" }}>Synchronizing indexed chunks from MongoDB Atlas</div>
           </div>
         ) : student ? (
           <KnowledgeVault student={student} apiUrl={apiUrl} />

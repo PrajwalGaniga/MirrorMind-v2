@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MirrorMind v2 | Next.js & FastAPI",
-  description: "Starter fullstack application with Next.js frontend, FastAPI backend, and Firebase Google Auth",
+  title: "MirrorMind v2 | Autonomous AI Career Copilot & Neural Skill Engine",
+  description: "AI-powered engineering career intelligence platform with PyTorch CareerMLP, 5-Pillar Skill Radar, Grounded RAG, and Autonomous Voice Copilot.",
 };
 
 export default function RootLayout({
@@ -26,7 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <div className="app-shell-backdrop">
+            <div className="app-shell">{children}</div>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
