@@ -94,57 +94,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.shellBase,
       appBar: AppBar(
+        titleSpacing: 12,
         title: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: AppTheme.charcoal,
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Center(
-                child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.accent, fontSize: 16)),
+                child: Text('M', style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.accent, fontSize: 15)),
               ),
             ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('MirrorMind v2', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
-                Text('Autonomous Career Copilot', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
-              ],
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'MirrorMind v2',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                  ),
+                  Text(
+                    'Autonomous Career Copilot',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 9.5, color: AppTheme.textSecondary),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
             icon: _isRefreshing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.charcoal))
-                : const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
+                ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.charcoal))
+                : const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 19),
             tooltip: 'Re-evaluate AI',
             onPressed: _isRefreshing ? null : _loadInitialPrediction,
           ),
+          const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.record_voice_over, color: AppTheme.charcoal, size: 21),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.record_voice_over, color: AppTheme.charcoal, size: 20),
             tooltip: 'Voice Copilot',
             onPressed: _openVoiceCopilot,
           ),
+          const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppTheme.textSecondary, size: 20),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.settings_outlined, color: AppTheme.textSecondary, size: 19),
             tooltip: 'Settings',
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
+          const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppTheme.textSecondary, size: 20),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.logout, color: AppTheme.textSecondary, size: 19),
             tooltip: 'Sign Out',
             onPressed: () async {
               await AuthService().logout();
               widget.onProfileUpdated();
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: IndexedStack(

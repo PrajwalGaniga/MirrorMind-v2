@@ -340,13 +340,22 @@ class _KnowledgeVaultScreenState extends State<KnowledgeVaultScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.inventory_2_outlined, size: 20, color: AppTheme.charcoal),
-                  SizedBox(width: 8),
-                  Text('Indexed Document Chunks', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                ],
+              const Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 19, color: AppTheme.charcoal),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Indexed Document Chunks',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               StatusBadge(
                 label: _documents.isNotEmpty ? '${_documents.length} IN VAULT' : 'DEFAULT INDEXED',
                 isConnected: true,

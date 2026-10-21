@@ -20,8 +20,25 @@ subprojects {
 }
 
 subprojects {
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
+    val configureAndroid: (Project) -> Unit = { proj ->
+        val android = proj.extensions.findByName("android")
+        if (android != null) {
+            try {
+                android.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType).invoke(android, 36)
+            } catch (e: Exception) {
+                try {
+                    val method = android.javaClass.methods.firstOrNull { it.name == "setCompileSdk" || it.name == "compileSdkVersion" }
+                    method?.invoke(android, 36)
+                } catch (e2: Exception) {
+                }
+            }
+        }
+    }
+
+    if (project.state.executed) {
+        configureAndroid(project)
+    } else {
+        project.afterEvaluate { configureAndroid(project) }
     }
 }
 
