@@ -46,3 +46,16 @@ def db_status_endpoint():
     MongoDB connection status endpoint.
     """
     return check_mongo_health()
+
+@router.get("/ping")
+def ping_endpoint():
+    """
+    Lightweight keep-alive heartbeat endpoint for cron-job monitoring.
+    """
+    return {
+        "status": "pong",
+        "message": "MirrorMind v2 backend is awake and healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+    }

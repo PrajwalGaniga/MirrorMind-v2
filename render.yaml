@@ -29,4 +29,4 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173"
+        value: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,https://mirror-mind-v2.vercel.app"

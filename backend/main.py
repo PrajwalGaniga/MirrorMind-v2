@@ -121,3 +121,16 @@ def get_user(custom_name: Optional[str] = None):
         timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         version=settings.APP_VERSION,
     )
+
+@app.get("/ping")
+def root_ping():
+    """
+    Lightweight keep-alive heartbeat endpoint for cron jobs (e.g. cron-job.org).
+    """
+    return {
+        "status": "pong",
+        "message": "MirrorMind v2 backend is awake and healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+    }

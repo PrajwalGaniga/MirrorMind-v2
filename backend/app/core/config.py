@@ -53,6 +53,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
+        "https://mirror-mind-v2.vercel.app",
         "https://mirrormind-v2.vercel.app",
     ]
 
