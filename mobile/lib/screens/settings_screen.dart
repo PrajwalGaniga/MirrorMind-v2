@@ -82,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Text('FastAPI Server Base URL', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppTheme.textPrimary)),
                     const SizedBox(height: 6),
                     const Text(
-                      '• Android Emulator: http://10.0.2.2:8000\n• Physical Phone / LAN: http://192.168.31.253:8000\n• Windows / Web: http://localhost:8000',
+                      '• Production Backend: https://mirrormind-backend-z9vb.onrender.com\n• Android Emulator (Local): http://10.0.2.2:8000\n• Windows / Web (Local): http://localhost:8000',
                       style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, height: 1.45),
                     ),
                     const SizedBox(height: 14),

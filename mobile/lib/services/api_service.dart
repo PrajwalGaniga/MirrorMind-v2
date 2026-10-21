@@ -16,13 +16,9 @@ class ApiService {
 
   static const String _prefApiUrlKey = 'custom_api_url';
 
-  // Smart default host resolution:
-  // Android Emulator uses 10.0.2.2 to access host machine localhost.
-  // Windows/Web/iOS uses 127.0.0.1 (localhost).
+  // Production Render backend as default across Android, iOS, and Web:
   String get defaultBaseUrl {
-    if (kIsWeb) return 'http://localhost:8000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-    return 'http://127.0.0.1:8000';
+    return 'https://mirrormind-backend-z9vb.onrender.com';
   }
 
   Future<String> getBaseUrl() async {

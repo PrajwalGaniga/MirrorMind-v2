@@ -165,7 +165,7 @@ export const ResumeDropzone: React.FC<ResumeDropzoneProps> = ({
             <span>✅</span>
             <div>
               <strong>Successfully parsed {successInfo.filename}!</strong>
-              <div style={{ fontSize: "0.8rem", color: "var(--accent-emerald)" }}>
+              <div style={{ fontSize: "0.82rem", color: "#065F46", fontWeight: 500 }}>
                 Auto-extracted {successInfo.skillsCount} technical skills and pre-filled the form below.
               </div>
             </div>
