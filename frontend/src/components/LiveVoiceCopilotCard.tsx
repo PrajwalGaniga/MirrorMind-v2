@@ -28,7 +28,7 @@ interface LiveVoiceCopilotCardProps {
 
 export const LiveVoiceCopilotCard: React.FC<LiveVoiceCopilotCardProps> = ({
   student,
-  apiUrl = "http://localhost:8000",
+  apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com",
 }) => {
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
   const [wsStatus, setWsStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
@@ -232,8 +232,8 @@ export const LiveVoiceCopilotCard: React.FC<LiveVoiceCopilotCardProps> = ({
   // Connect WebSocket
   const connectWebSocket = useCallback((onOpenCallback?: () => void) => {
     setWsStatus("connecting");
-    const host = typeof window !== "undefined" ? window.location.hostname || "localhost" : "localhost";
-    const wsUrl = `ws://${host}:8000/api/ws/voice-chat`;
+    const baseApi = apiUrl || (typeof window !== "undefined" && process.env.NEXT_PUBLIC_API_URL) || "https://mirrormind-backend-z9vb.onrender.com";
+    const wsUrl = baseApi.replace(/^http/, "ws") + "/api/ws/voice-chat";
 
     try {
       const ws = new WebSocket(wsUrl);

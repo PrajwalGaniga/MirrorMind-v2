@@ -15,7 +15,7 @@ export default function MLVisualizerPage() {
   const [calculating, setCalculating] = useState<boolean>(false);
   const [backendOnline, setBackendOnline] = useState<boolean>(true);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
   const activeEmail =
     authUser?.email ||
     mongoUser?.email ||

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -51,7 +52,19 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "https://mirrormind-v2.vercel.app",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                return json.loads(v)
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     model_config = SettingsConfigDict(case_sensitive=True, extra="allow")
 

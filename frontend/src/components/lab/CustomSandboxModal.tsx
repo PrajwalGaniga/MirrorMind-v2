@@ -39,7 +39,7 @@ export const CustomSandboxModal: React.FC<CustomSandboxModalProps> = ({
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
       const res = await fetch(`${apiUrl}/api/ml/trace`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

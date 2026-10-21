@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const [internDesc, setInternDesc] = useState<string>("");
   const [showAddIntern, setShowAddIntern] = useState<boolean>(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
 
   const fetchProfile = useCallback(async (email: string) => {
     setLoading(true);

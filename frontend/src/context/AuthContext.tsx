@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
 
   // Sync Firebase user with FastAPI -> MongoDB Atlas
   const syncWithBackend = useCallback(async (currentUser: User) => {

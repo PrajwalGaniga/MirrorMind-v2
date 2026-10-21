@@ -16,7 +16,7 @@ export default function PortfolioPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("editorial");
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
 
   const fetchProfile = useCallback(async (email: string) => {
     setLoading(true);

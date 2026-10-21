@@ -12,7 +12,7 @@ export default function KnowledgeVaultPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [dbStatus, setDbStatus] = useState<string>("checking");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
 
   // Determine user email to load
   const activeEmail =

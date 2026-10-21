@@ -265,9 +265,8 @@ export default function VoiceChatPage() {
   const connectWebSocket = useCallback((onOpenCallback?: () => void) => {
     setWsStatus("connecting");
 
-    const host = window.location.hostname || "localhost";
-    const port = "8000";
-    const wsUrl = `ws://${host}:${port}/api/ws/voice-chat`;
+    const baseApi = process.env.NEXT_PUBLIC_API_URL || "https://mirrormind-backend-z9vb.onrender.com";
+    const wsUrl = baseApi.replace(/^http/, "ws") + "/api/ws/voice-chat";
 
     try {
       const ws = new WebSocket(wsUrl);
